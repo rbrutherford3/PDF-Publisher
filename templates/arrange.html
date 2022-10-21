@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Arrange titles</title>
+	<script src="{{ url_for('static', filename='arrange.js') }}"></script>
+</head>
+<body>
+	<form action="/compile" method="post">
+		<h1>Merge .docx files and convert to .pdf</h1>
+		<h2>Change order of documents:</h2>
+		<ol id="pdforder">
+			{%for i in range(0, pdfslen)%}
+    		<li id="{{ i }}" data-filename="{{ pdfs[i] + '.pdf' }}">
+				<input id="up{{ i }}" type="button" value="up" onClick=up(this.parentElement) {% if i == 0 %}disabled{% endif %}/>
+				<input id="down{{ i }}" type="button" value="down" onClick=down(this.parentElement) {% if i == pdfslen - 1 %}disabled{% endif %}/>
+			{{ pdfs[i] }}
+			</li>
+			{%endfor%}
+		</ol>
+		<input type="hidden" id="pdfslen" value="{{ pdfslen }}" />
+		<input type="hidden" id="finalorder" name="finalorder" />
+		<h2>Submit order for merging:</h2>
+		<input type="submit" value="Merge" onClick="submitPDF()" />
+	</form>
+</body>
+</html>
