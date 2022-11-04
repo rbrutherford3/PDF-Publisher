@@ -30,7 +30,7 @@ def success():
             justname = docx.replace(".docx", "")
             justnames.append(justname)
             f.save("uploads/" + docx)
-            os.system("libreoffice --headless --convert-to pdf 'uploads/" + docx + "' --outdir uploads")
+            os.system("export PATH=$PATH:/usr/bin; libreoffice --headless --convert-to pdf 'uploads/" + docx + "' --outdir uploads")
             os.remove("uploads/" + docx)
         justnames.reverse()
         # Send bare filenames to 'arrange.html' for ordering
