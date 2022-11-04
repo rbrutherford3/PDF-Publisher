@@ -34,10 +34,11 @@ If you haven't already done so, install Python3 and PIP:
 sudo apt install python3 -y
 sudo apt install python3-pip -y
 ```
-Install Flask and PyPDF2:
+Install Flask, PyPDF2, and FPDF:
 ```
 sudo pip3 install flask -y
 sudo pip3 install pypdf2 -y
+sudo pip3 install FPDF -y
 ```
 Clone the project:
 ```

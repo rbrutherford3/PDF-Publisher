@@ -19,7 +19,10 @@
 		</ol>
 		<input type="hidden" id="pdfslen" value="{{ pdfslen }}" />
 		<input type="hidden" id="finalorder" name="finalorder" />
-		<h2>Submit order for merging:</h2>
+		<h2>Specify options</h2>
+		<input type="checkbox" id="pagenumbers" name="pagenumbers" />
+		<label for="pagenumbers">Add page numbers</label>
+		<h2>Submit for merging:</h2>
 		<input type="submit" value="Merge" onClick="submitPDF()" />
 	</form>
 </body>
