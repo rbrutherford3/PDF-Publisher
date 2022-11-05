@@ -58,14 +58,28 @@ def success():
         # Send bare filenames to 'arrange.html' for ordering
         return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
 
+# Gather .pdf documents, create page numbers and table of contents, and merge
 @app.route('/compile', methods = ['POST'])
 def compile():
         result = "result.pdf"
+        result_outlined = "result_out.pdf"
+        if os.path.exists(result_outlined):
+            os.remove(result_outlined)
         filenames = request.form['finalorder']
+        titles = request.form['titles']
         filelist = filenames.split('$')
+        titlelist = titles.split('$')
         merger = PyPDF2.PdfMerger()
-        for f in filelist:
-            merger.append("uploads/" + f)
+        pagenumber = 1
+        toc = ""
+        for i in range(len(filelist)):
+            pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
+            toc += "\"" + titlelist[i] + "\"" + " " + str(pagenumber) + "\n"
+            pagenumber += pdf.getNumPages()
+            merger.append("uploads/" + filelist[i])
+        f = open("toc", "w")
+        f.write(toc)
+        f.close()
         merger.write(result)
         merger.close()
         uploads = os.listdir("uploads")
@@ -74,10 +88,10 @@ def compile():
         
         if request.form.get("pagenumbers"):
             # Page numbering code taken from https://stackoverflow.com/a/68382694/3130769
-
+            original = "originalresult.pdf"
+            os.rename(result, original)
             # Grab the file you want to add pages to
-            inputFile = PyPDF2.PdfFileReader(result)
-            outputFile = "resultWithPageNumbers.pdf"
+            inputFile = PyPDF2.PdfFileReader(original)
 
             # Create a temporary numbering PDF using the overloaded FPDF class, passing the number of pages
             # from your original file
@@ -107,17 +121,17 @@ def compile():
                 mergeWriter.addPage(inputPage)
 
             # Delete the temporary file and the input file
-            os.remove(result)
+            os.remove(original)
             os.remove("tempNumbering.pdf")
 
             # Write the merged output
-            with open(outputFile, 'wb') as fh:
+            with open(result, 'wb') as fh:
                 mergeWriter.write(fh)
-
-            # Download the result
-            return send_file(outputFile, as_attachment=True)
-        else:
-            return send_file(result, as_attachment=True)          
+        
+        os.system("export PATH=$PATH:/usr/local/bin; pdftocio " + result + " < toc")
+        os.remove("toc")
+        os.remove(result)
+        return send_file(result_outlined, as_attachment=True)      
 
 if __name__ == "__main__":
     app.run()

@@ -1,4 +1,4 @@
-// Function to swap two list items when clicking the "up" button
+// Function to swap two list items when clicking the "up" button, including their custom title
 function up(a) {
 	var listNum = parseInt(a.id);
 	var a = document.getElementById(listNum - 1);
@@ -6,10 +6,14 @@ function up(a) {
 	a.parentNode.insertBefore(b, a);
 	a.id = listNum;
 	b.id = listNum - 1;
+	var c = document.getElementById("title" + (listNum - 1));
+	var d = document.getElementById("title" + listNum);
+	c.id = "title" + listNum;
+	d.id = "title" + (listNum - 1);
 	disableButtons()
 }
 
-// Function to swap two list items when clicking the "down" button
+// Function to swap two list items when clicking the "down" button, including their custom title
 function down(a) {
 	var listNum = parseInt(a.id);
 	var a = document.getElementById(listNum + 1);
@@ -17,6 +21,10 @@ function down(a) {
 	a.parentNode.insertBefore(a, b);
 	a.id = listNum;
 	b.id = listNum + 1;
+	var c = document.getElementById("title" + (listNum + 1));
+	var d = document.getElementById("title" + listNum);
+	c.id = "title" + listNum;
+	d.id = "title" + (listNum + 1);	
 	disableButtons()
 }
 
@@ -43,14 +51,19 @@ function pageNumberControls() {
 	document.getElementById("pagenumbersize").disabled = !document.getElementById("pagenumbers").checked;
 }
 
-// Compile list of pdfs in the specified order upon submission
+// Compile list of pdfs and their titles in the specified order upon submission
 function submitPDF() {
 	var pdflist = document.getElementById("pdforder");
 	var formatted = "";
+	var titles = ""
 	for (i = 0; i <= pdflist.lastElementChild.id; i++) {
 		formatted = formatted + document.getElementById(i).getAttribute("data-filename");
-		if (i < pdflist.lastElementChild.id)
+		titles = titles + document.getElementById("title" + i).value;
+		if (i < pdflist.lastElementChild.id) {
 			formatted = formatted + "$";
+			titles = titles + "$";
+		}
 	}
 	document.getElementById("finalorder").value = formatted;
+	document.getElementById("titles").value = titles;
 }
