@@ -7,3 +7,12 @@
     overflow: hidden;
     outline: none;
 }
+
+#pagenumbersize {
+    width: 50px;
+}
+
+.option {
+    display: block;
+    margin: 10px;
+}

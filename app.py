@@ -7,9 +7,11 @@ app = Flask(__name__)
 
 # Page numbering class taken from https://stackoverflow.com/a/68382694/3130769
 class NumberPDF(FPDF):
-    def __init__(self, numberOfPages):
+    def __init__(self, numberOfPages, pagenumberfont, pagenumbersize):
         super(NumberPDF, self).__init__()
         self.numberOfPages = numberOfPages
+        self.pagenumberfont = pagenumberfont
+        self.pagenumbersize = pagenumbersize
 
     # Overload Header
     def header(self):
@@ -18,7 +20,7 @@ class NumberPDF(FPDF):
     # Overload Footer
     def footer(self):
         self.set_y(-15)
-        self.set_font('Arial', '', 12)
+        self.set_font(self.pagenumberfont, '', self.pagenumbersize)
         self.cell(0, 10, f"{self.page_no()}", 0, 0, 'C')
 
 # Go to file upload initially
@@ -79,7 +81,7 @@ def compile():
 
             # Create a temporary numbering PDF using the overloaded FPDF class, passing the number of pages
             # from your original file
-            tempNumFile = NumberPDF(inputFile.getNumPages())
+            tempNumFile = NumberPDF(inputFile.getNumPages(), request.form.get("pagenumberfont"), int(request.form.get("pagenumbersize")))
 
             # Add a new page to the temporary numbering PDF (the footer function runs on add_page and will 
             # put the page number at the bottom, all else will be blank

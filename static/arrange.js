@@ -37,6 +37,12 @@ function disableButtons() {
 	}
 }
 
+// Enable controls for page numbers only if enabling page numbers, and vice-versa
+function pageNumberControls() {
+	document.getElementById("pagenumberfont").disabled = !document.getElementById("pagenumbers").checked;
+	document.getElementById("pagenumbersize").disabled = !document.getElementById("pagenumbers").checked;
+}
+
 // Compile list of pdfs in the specified order upon submission
 function submitPDF() {
 	var pdflist = document.getElementById("pdforder");

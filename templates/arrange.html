@@ -20,9 +20,23 @@
 		</ol>
 		<input type="hidden" id="pdfslen" value="{{ pdfslen }}" />
 		<input type="hidden" id="finalorder" name="finalorder" />
-		<h2>Specify options</h2>
-		<input type="checkbox" id="pagenumbers" name="pagenumbers" />
-		<label for="pagenumbers">Add page numbers</label>
+		<div class="option">
+			<h2>Specify options</h2>
+			<input type="checkbox" id="pagenumbers" name="pagenumbers" onClick="pageNumberControls()" />
+			<label for="pagenumbers">Add page numbers</label>
+		</div>
+		<div class="option">
+			<select id="pagenumberfont" name="pagenumberfont" disabled>
+				<option value="Courier">Courier</option>
+				<option value="Arial">Arial</option>
+				<option value="Times">Times</option>
+			</select>
+			<label for="pagenumberfont">Page number font</label>
+		</div>
+		<div class="option">
+			<input type="number" id="pagenumbersize" name="pagenumbersize" min="6" max="16" step="1" value="12" disabled />
+			<label for="pagenumbersize">Page number size</label>
+		</div>
 		<h2>Submit for merging:</h2>
 		<input type="submit" value="Merge" onClick="submitPDF()" />
 	</form>
