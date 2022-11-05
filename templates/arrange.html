@@ -3,6 +3,7 @@
 <head>
 	<title>Arrange titles</title>
 	<script src="static/arrange.js"></script>
+	<link rel="stylesheet" href="static/style.css">
 </head>
 <body>
 	<form action="compile" method="post">
@@ -11,8 +12,8 @@
 		<ol id="pdforder">
 			{%for i in range(0, pdfslen)%}
     		<li id="{{ i }}" data-filename="{{ pdfs[i] + '.pdf' }}">
-				<input id="up{{ i }}" type="button" value="up" onClick=up(this.parentElement) {% if i == 0 %}disabled{% endif %}/>
-				<input id="down{{ i }}" type="button" value="down" onClick=down(this.parentElement) {% if i == pdfslen - 1 %}disabled{% endif %}/>
+				<input class="arrow" id="up{{ i }}" type="button" value="&#129061;" onClick=up(this.parentElement) {% if i == 0 %}style="visibility: hidden;"{% endif %}/>
+				<input class="arrow" id="down{{ i }}" type="button" value="&#129063;" onClick=down(this.parentElement) {% if i == pdfslen - 1 %}style="visibility: hidden;"{% endif %}/>
 			{{ pdfs[i] }}
 			</li>
 			{%endfor%}

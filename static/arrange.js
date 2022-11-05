@@ -26,14 +26,14 @@ function disableButtons() {
 	for (i = 0; i < numButtons; i++) {
 		var buttonUp = document.getElementById("up" + i)
 		if (parseInt(buttonUp.parentNode.id) == 0)
-			buttonUp.disabled = true;
+			buttonUp.style.visibility = "hidden";
 		else
-			buttonUp.disabled = false;		
+			buttonUp.style.visibility = "visible";		
 		var buttonDown = document.getElementById("down" + i)
 		if (parseInt(buttonDown.parentNode.id) == (numButtons - 1))
-			buttonDown.disabled = true;
+			buttonDown.style.visibility = "hidden";
 		else
-			buttonDown.disabled = false;
+			buttonDown.style.visibility = "visible";
 	}
 }
 

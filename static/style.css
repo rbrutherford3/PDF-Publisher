@@ -1,0 +1,9 @@
+.arrow {
+    /* Taken from https://stackoverflow.com/a/22672444/3130769 */
+    background-color: transparent;
+    background-repeat: no-repeat;
+    border: none;
+    cursor: pointer;
+    overflow: hidden;
+    outline: none;
+}
