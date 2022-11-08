@@ -8,8 +8,8 @@
     outline: none;
 }
 
-#pagenumbersize {
-    width: 50px;
+#pagenumbersize, #pagenumbermargin {
+    width: 60px;
 }
 
 .option {

@@ -21,10 +21,19 @@
 		<input type="hidden" id="pdfslen" value="{{ pdfslen }}" />
 		<input type="hidden" id="finalorder" name="finalorder" />
 		<input type="hidden" id="titles" name="titles" />
+		<h2>Specify options</h2>
 		<div class="option">
-			<h2>Specify options</h2>
 			<input type="checkbox" id="pagenumbers" name="pagenumbers" onClick="pageNumberControls()" />
 			<label for="pagenumbers">Add page numbers</label>
+		</div>
+		<div class="option">
+			<select id="pagenumberformat" name="pagenumberformat" disabled>
+				<option value="1">x</option>
+				<option value="2">x of y</option>
+				<option value="3">Page x</option>
+				<option value="4">Page x of y</option>
+			</select>
+			<label for="pagenumberformat">Page number format</label>
 		</div>
 		<div class="option">
 			<select id="pagenumberfont" name="pagenumberfont" disabled>
@@ -37,6 +46,10 @@
 		<div class="option">
 			<input type="number" id="pagenumbersize" name="pagenumbersize" min="6" max="16" step="1" value="12" disabled />
 			<label for="pagenumbersize">Page number size</label>
+		</div>
+		<div class="option">
+			<input type="number" id="pagenumbermargin" name="pagenumbermargin" min="0.0625" max="1.5" step="0.0625" value="0.5" disabled />
+			<label for="pagenumbermargin">Page number margin (inches)</label>
 		</div>
 		<h2>Submit for merging:</h2>
 		<input type="submit" value="Merge" onClick="submitPDF()" />

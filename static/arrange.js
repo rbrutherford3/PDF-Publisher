@@ -47,8 +47,10 @@ function disableButtons() {
 
 // Enable controls for page numbers only if enabling page numbers, and vice-versa
 function pageNumberControls() {
+	document.getElementById("pagenumberformat").disabled = !document.getElementById("pagenumbers").checked;
 	document.getElementById("pagenumberfont").disabled = !document.getElementById("pagenumbers").checked;
 	document.getElementById("pagenumbersize").disabled = !document.getElementById("pagenumbers").checked;
+	document.getElementById("pagenumbermargin").disabled = !document.getElementById("pagenumbers").checked;
 }
 
 // Compile list of pdfs and their titles in the specified order upon submission
