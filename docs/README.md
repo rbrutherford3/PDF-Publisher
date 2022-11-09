@@ -2,7 +2,7 @@
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 
-This is a Flask app that takes uploaded .doc, .docx, and .pdf files, converts them to .pdf, allows the user to arrange and rename them, optionally include page numbers and a table of contents (including embedded PDF bookmarks) and then merges them into one big file.  Future versions will include the ability to add cover sheets before the table of contents.
+This is a Flask app that takes uploaded .doc, .docx, and .pdf files, converts them to .pdf, allows the user to arrange and rename them, optionally include page numbers and a table of contents (including embedded PDF bookmarks) and then merges them into one big file.
 
 ## Table of Contents
 

@@ -16,3 +16,8 @@ input[type=number] {
     display: block;
     margin: 10px;
 }
+
+.toc:disabled {
+    background-color: black;
+    color: white;
+}

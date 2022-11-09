@@ -11,10 +11,10 @@
 		<h2>Change order of documents:</h2>
 		<ol id="pdforder">
 			{%for i in range(0, pdfslen)%}
-    		<li id="{{ i }}" data-filename="{{ pdfs[i] + '.pdf' }}">
+    		<li id="{{ i }}" {% if i == 0 %}data-filename="### TABLE OF CONTENTS ###"{% else %}data-filename="{{ pdfs[i] + '.pdf' }}"{% endif %}>
 				<input class="arrow" id="up{{ i }}" type="button" value="&#129061;" onClick=up(this.parentElement) {% if i == 0 %}style="visibility: hidden;"{% endif %}/>
 				<input class="arrow" id="down{{ i }}" type="button" value="&#129063;" onClick=down(this.parentElement) {% if i == pdfslen - 1 %}style="visibility: hidden;"{% endif %}/>
-			    <input type="text" id="title{{ i }}" value="{{ pdfs[i] }}" />
+				<input type="text" id="title{{ i }}" value="{{ pdfs[i] }}" {% if i == 0 %}class="toc" disabled{%endif%}/>
 			</li>
 			{%endfor%}
 		</ol>
