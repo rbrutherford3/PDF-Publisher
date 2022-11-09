@@ -129,6 +129,10 @@ def compile():
                 y += toclistitemspacing
                 pagenumber += pdf.getNumPages()
                 merger.append("uploads/" + filelist[i])
+                # Continue table of contents onto another page if no more room
+                if y > 279.4 - tocverticalmargin:
+                    contents.add_page()
+                    y = tocverticalmargin
             contents.output(tocfile)    # Save the T.O.C. file for later
         else:
             # If not making a T.O.C. page, simply merge the documents and make the
