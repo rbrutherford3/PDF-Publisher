@@ -58,12 +58,12 @@ def success():
         filelist = request.files.getlist("file")
         justnames = []
         for f in filelist:
-            docx = f.filename
-            justname = docx.replace(".docx", "")
-            justnames.append(justname)
-            f.save(os.path.join(uploads, docx))
-            os.system("export PATH=$PATH:/usr/bin; libreoffice --headless --convert-to pdf '" + uploads + "/" + docx + "' --outdir " + uploads)
-            os.remove(os.path.join(uploads, docx))
+            filename, extension = os.path.splitext(f.filename)
+            justnames.append(filename)
+            f.save(os.path.join(uploads, f.filename))
+            if extension == ".doc" or extension == ".docx":
+                os.system("export PATH=$PATH:/usr/bin; libreoffice --headless --convert-to pdf '" + uploads + "/" + f.filename + "' --outdir " + uploads)
+                os.remove(os.path.join(uploads, f.filename))
         justnames.reverse()
         # Send bare filenames to 'arrange.html' for ordering
         return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))

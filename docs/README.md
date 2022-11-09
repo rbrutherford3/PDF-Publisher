@@ -1,12 +1,8 @@
-# docx Publisher
+# PDF Publisher
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 
-This is a Flask app that takes uploaded .docx files, converts them to .pdf, allows the user to arrange the files to suit them, and then merges them into one big file.  Future versions will include:
-- Page numbers
-- Table of contents
-- Cover sheets
-- Mixed .pdf and .docx uploads
+This is a Flask app that takes uploaded .doc, .docx, and .pdf files, converts them to .pdf, allows the user to arrange and rename them, optionally include page numbers and a table of contents (including embedded PDF bookmarks) and then merges them into one big file.  Future versions will include the ability to add cover sheets before the table of contents.
 
 ## Table of Contents
 
@@ -69,7 +65,7 @@ You can also use [**Gunicorn**](https://gunicorn.org/) to set up this project fo
 
 1. Simply navigate to the indicated URL
 1. Click the **Browse...** button
-1. Select multiple .docx files to upload
+1. Select multiple .doc, .docx, and .pdf files to upload
 1. Click **Upload** and wait for the system to convert the files to .pdf
 1. Arrange the order of the files by clicking the **Up** and **Down** buttons and optionally rename them
 1. Select any options such as adding page numbers or table of contents and specify their criteria
