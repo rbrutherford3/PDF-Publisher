@@ -34,11 +34,12 @@ If you haven't already done so, install Python3 and PIP:
 sudo apt install python3 -y
 sudo apt install python3-pip -y
 ```
-Install Flask, PyPDF2, and FPDF:
+Install Flask, PyPDF2, FPDF, and pdf.tocgen:
 ```
 sudo pip3 install flask -y
 sudo pip3 install pypdf2 -y
 sudo pip3 install FPDF -y
+sudo pip3 install pdf.tocgen -y
 ```
 Clone the project:
 ```
@@ -69,8 +70,9 @@ You can also use [**Gunicorn**](https://gunicorn.org/) to set up this project fo
 1. Simply navigate to the indicated URL
 1. Click the **Browse...** button
 1. Select multiple .docx files to upload
-1. Click **Upload** and wait for the system to conver the files to .pdf
-1. Arrange the order of the files by clicking the **Up** and **Down** buttons
+1. Click **Upload** and wait for the system to convert the files to .pdf
+1. Arrange the order of the files by clicking the **Up** and **Down** buttons and optionally rename them
+1. Select any options such as adding page numbers or table of contents and specify their criteria
 1. Click **Merge** and, if applicable, select a location to download the merged .pdf file
 
 ## Contributing

@@ -71,41 +71,86 @@ def success():
 # Gather .pdf documents, create page numbers and table of contents, and merge
 @app.route('/compile', methods = ['POST'])
 def compile():
+        # Remove previous .pdf files
+        for filename in os.listdir(os.getcwd()):
+            if filename.lower().endswith("pdf"):
+                os.remove(filename)
+        
+        # Define pdf filenames
         result = "result.pdf"
         result_outlined = "result_out.pdf"
-        if os.path.exists(result_outlined):
-            os.remove(result_outlined)
-        filenames = request.form['finalorder']
-        titles = request.form['titles']
+        tocfile = "contents.pdf"
+        final = "final.pdf"
+
+        # Gather filenames in user-specified order and user-specified titles
+        filenames = request.form.get("finalorder")
+        titles = request.form.get("titles")
         filelist = filenames.split('$')
         titlelist = titles.split('$')
+
+        # Create merge object, define initial conditions
         merger = PyPDF2.PdfMerger()
         pagenumber = 1
-        toc = ""
-        contents = FPDF('P','in','Letter')
-        contents.add_page()
-        contents.set_font('Arial', '', 12)
-        pagenumbersize = 10
-        pagenumbermargin = 10
-        for i in range(len(filelist)):
-            pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
-            toc += "\"" + titlelist[i] + "\"" + " " + str(pagenumber) + "\n"
-            contents.set_xy(pagenumbersize, pagenumbermargin)
-            contents.cell(195.9, 0, titlelist[i], 0, 0, 'L')
-            contents.set_xy(pagenumbersize, pagenumbermargin)
-            contents.cell(195.9, 0, str(pagenumber), 0, 0, 'R')
-            pagenumbermargin += 10
-            pagenumber += pdf.getNumPages()
-            merger.append("uploads/" + filelist[i])
-        contents.output("contents.pdf")
+        toclist = ""
+        toc = request.form.get("toc")
+        if toc:
+            # Gather user-defined length and size criteria
+            tocheaderfont = request.form.get("tocheaderfont")
+            tocheadersize = int(request.form.get("tocheadersize"))
+            tocheaderspacing = 25.4*float(request.form.get("tocheaderspacing")) # Converted to mm
+            toclistitemfont = request.form.get("toclistitemfont")
+            toclistitemsize = int(request.form.get("toclistitemsize"))
+            tocverticalmargin = 25.4*float(request.form.get("tocverticalmargin")) # Converted to mm
+            tochorizontalmargin = 25.4*float(request.form.get("tochorizontalmargin")) # Converted to mm
+            cellwidth = (215.9-2*tochorizontalmargin)   # 8.5 inches minus twice the horizontal margin
+            toclistitemspacing = 25.4*float(request.form.get("toclistitemspacing")) #Converted to mm
+
+            # Create table of contents page
+            contents = FPDF()
+            contents.add_page()
+
+            # Create table of contents header
+            contents.set_font(tocheaderfont, '', tocheadersize)
+            y = tocverticalmargin
+            contents.set_xy(tochorizontalmargin, y)
+            contents.cell(cellwidth, 0, "Table of Contents", 0, 0, "C")
+
+            # Loop through each item in the list of documents and add them to the T.O.C.
+            # and create the T.O.C. PDF bookmarks and merge the documents into one PDF
+            y += tocheaderspacing
+            contents.set_font(toclistitemfont, '', toclistitemsize)
+            for i in range(len(filelist)):
+                pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
+                toclist += "\"" + titlelist[i] + "\"" + " " + str(pagenumber) + "\n"
+                contents.set_xy(tochorizontalmargin, y)
+                contents.cell(cellwidth, 0, titlelist[i], 0, 0, 'L')
+                contents.set_xy(tochorizontalmargin, y)
+                contents.cell(cellwidth, 0, str(pagenumber), 0, 0, 'R')
+                y += toclistitemspacing
+                pagenumber += pdf.getNumPages()
+                merger.append("uploads/" + filelist[i])
+            contents.output(tocfile)    # Save the T.O.C. file for later
+        else:
+            # If not making a T.O.C. page, simply merge the documents and make the
+            # T.O.C. file for creating the PDF bookmarks later
+            for i in range(len(filelist)):
+                pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
+                toclist += "\"" + titlelist[i] + "\"" + " " + str(pagenumber) + "\n"
+                pagenumber += pdf.getNumPages()
+                merger.append("uploads/" + filelist[i])
+        # Save the table of contents pdf bookmark list for later
         f = open("toc", "w")
-        f.write(toc)
+        f.write(toclist)
         f.close()
+
+        # Save the merged file
         merger.write(result)
         merger.close()
+
+        # Delete the individual pdfs
         uploads = os.listdir("uploads")
         for f in uploads:
-            os.remove(os.path.join("uploads", f))  
+            os.remove(os.path.join("uploads", f))
         
         if request.form.get("pagenumbers"):
             # Page numbering code taken from https://stackoverflow.com/a/68382694/3130769
@@ -154,10 +199,24 @@ def compile():
             with open(result, 'wb') as fh:
                 mergeWriter.write(fh)
         
+        # Create a pdf file with the table of contents bookmarks
         os.system("export PATH=$PATH:/usr/local/bin; pdftocio " + result + " < toc")
         os.remove("toc")
         os.remove(result)
-        return send_file(result_outlined, as_attachment=True)      
+
+        # Compile table of contents with the pdf
+        if toc:
+            merger = PyPDF2.PdfMerger()
+            merger.append(tocfile)
+            merger.append(result_outlined)
+            merger.write(final)
+            merger.close()
+            os.remove(tocfile)
+        else:
+            os.rename(result_outlined, final)
+
+        # Download the final result
+        return send_file(final, as_attachment=True)
 
 if __name__ == "__main__":
     app.run()

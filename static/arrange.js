@@ -53,6 +53,18 @@ function pageNumberControls() {
 	document.getElementById("pagenumbermargin").disabled = !document.getElementById("pagenumbers").checked;
 }
 
+// Enable controls for table of contents only if enabling table of contents, and vice-versa
+function tocControls() {
+	document.getElementById("tocheaderfont").disabled = !document.getElementById("toc").checked;
+	document.getElementById("tocheadersize").disabled = !document.getElementById("toc").checked;
+	document.getElementById("tocheaderspacing").disabled = !document.getElementById("toc").checked;
+	document.getElementById("toclistitemfont").disabled = !document.getElementById("toc").checked;
+	document.getElementById("toclistitemsize").disabled = !document.getElementById("toc").checked;
+	document.getElementById("toclistitemspacing").disabled = !document.getElementById("toc").checked;
+	document.getElementById("tocverticalmargin").disabled = !document.getElementById("toc").checked;
+	document.getElementById("tochorizontalmargin").disabled = !document.getElementById("toc").checked;
+}
+
 // Compile list of pdfs and their titles in the specified order upon submission
 function submitPDF() {
 	var pdflist = document.getElementById("pdforder");

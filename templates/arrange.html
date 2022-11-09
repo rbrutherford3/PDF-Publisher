@@ -51,6 +51,50 @@
 			<input type="number" id="pagenumbermargin" name="pagenumbermargin" min="0.0625" max="1.5" step="0.0625" value="0.5" disabled />
 			<label for="pagenumbermargin">Page number margin (inches)</label>
 		</div>
+		<div class="option">
+			<input type="checkbox" id="toc" name="toc" onClick="tocControls()" />
+			<label for="toc">Add table of contents</label>
+		</div>
+		<div class="option">
+			<select id="tocheaderfont" name="tocheaderfont" disabled>
+				<option value="Courier">Courier</option>
+				<option value="Arial">Arial</option>
+				<option value="Times">Times</option>
+			</select>
+			<label for="tocheaderfont">Table of contents header font</label>
+		</div>
+		<div class="option">
+			<input type="number" id="tocheadersize" name="tocheadersize" min="12" max="30" step="2" value="16" disabled />
+			<label for="tocheadersize">Table of contents header size</label>
+		</div>
+		<div class="option">
+			<input type="number" id="tocheaderspacing" name="tocheaderspacing" min="0.0625" max="1.0" step="0.0625" value="0.5" disabled />
+			<label for="tocheaderspacing">Table of contents header spacing (inches)</label>
+		</div>
+		<div class="option">
+			<select id="toclistitemfont" name="toclistitemfont" disabled>
+				<option value="Courier">Courier</option>
+				<option value="Arial">Arial</option>
+				<option value="Times">Times</option>
+			</select>
+			<label for="toclistitemfont">Table of contents list item font</label>
+		</div>
+		<div class="option">
+			<input type="number" id="toclistitemsize" name="toclistitemsize" min="6" max="16" step="1" value="12" disabled />
+			<label for="toclistitemsize">Table of contents list item size</label>
+		</div>
+		<div class="option">
+			<input type="number" id="toclistitemspacing" name="toclistitemspacing" min="0.0625" max="1.0" step="0.0625" value="0.5" disabled />
+			<label for="toclistitemspacing">Table of contents list item spacing (inches)</label>
+		</div>
+		<div class="option">
+			<input type="number" id="tocverticalmargin" name="tocverticalmargin" min="0.0625" max="1.5" step="0.0625" value="1" disabled />
+			<label for="tocverticalmargin">Table of contents vertical margin (inches)</label>
+		</div>
+		<div class="option">
+			<input type="number" id="tochorizontalmargin" name="tochorizontalmargin" min="0.0625" max="1.5" step="0.0625" value="1" disabled />
+			<label for="tochorizontalmargin">Table of contents horizontal margin (inches)</label>
+		</div>
 		<h2>Submit for merging:</h2>
 		<input type="submit" value="Merge" onClick="submitPDF()" />
 	</form>
