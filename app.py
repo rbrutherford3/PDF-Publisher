@@ -64,7 +64,7 @@ def success():
             if extension == ".doc" or extension == ".docx":
                 os.system("export PATH=$PATH:/usr/bin; libreoffice --headless --convert-to pdf '" + uploads + "/" + f.filename + "' --outdir " + uploads)
                 os.remove(os.path.join(uploads, f.filename))
-        justnames.append("### TABLE OF CONTENTS ###")
+        justnames.append("TABLE OF CONTENTS")
         justnames.reverse()
         # Send bare filenames to 'arrange.html' for ordering
         return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
@@ -80,10 +80,10 @@ def compile():
         # Define pdf filenames
         unindexedfile = "unindexed.pdf"
         indexedfile = "indexed.pdf"
-        indexedfileoutlined = "indexed_out.pdf"
         indexedfilewithtoc = "indexed_toc.pdf"
         tocfile = "contents.pdf"
         final = "final.pdf"
+        finaloutlined = "final_out.pdf"
 
         # Gather filenames in user-specified order and user-specified titles
         filenames = request.form.get("finalorder")
@@ -94,7 +94,8 @@ def compile():
         # Create merge object, define initial conditions
         indexedresult = PyPDF2.PdfMerger()
         unindexedresult = PyPDF2.PdfMerger()
-        pagenumber = 1
+        tocpagenumber = 1
+        tocnumpages = 0
         toclist = ""
         toc = request.form.get("toc")
         if toc:
@@ -119,10 +120,9 @@ def compile():
             contents.set_xy(tochorizontalmargin, y)
             contents.cell(cellwidth, 0, "Table of Contents", 0, 0, "C")
             tocpassed = False
-            unindexedempty = True
+            tocnumpages += 1
 
             # Loop through each item in the list of documents and add them to the T.O.C.
-            # and create the T.O.C. PDF bookmarks and merge the documents into one PDF
             y += tocheaderspacing
             contents.set_font(toclistitemfont, '', toclistitemsize)
             for i in range(len(filelist)):
@@ -131,30 +131,37 @@ def compile():
                 else:
                     pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
                     if tocpassed:
-                        toclist += "\"" + titlelist[i] + "\"" + " " + str(pagenumber) + "\n"
                         contents.set_xy(tochorizontalmargin, y)
                         contents.cell(cellwidth, 0, titlelist[i], 0, 0, 'L')
                         contents.set_xy(tochorizontalmargin, y)
-                        contents.cell(cellwidth, 0, str(pagenumber), 0, 0, 'R')
+                        contents.cell(cellwidth, 0, str(tocpagenumber), 0, 0, 'R')
                         y += toclistitemspacing
-                        pagenumber += pdf.getNumPages()
-                        indexedresult.append("uploads/" + filelist[i])
+                        tocpagenumber += pdf.getNumPages()
                         # Continue table of contents onto another page if no more room
                         if y > 279.4 - tocverticalmargin:
                             contents.add_page()
+                            tocnumpages += 1 # Add page number for bookmarks
                             y = tocverticalmargin
-                    else:
-                        unindexedresult.append("uploads/" + filelist[i])
-                        unindexedempty = False
             contents.output(tocfile)    # Save the T.O.C. file for later
-        else:
-            # If not making a T.O.C. page, simply merge the documents and make the
-            # T.O.C. file for creating the PDF bookmarks later
-            for i in range(len(filelist)):
+        
+        # Create bookmarks in PDF file and assemble PDFs
+        tocpassed = False
+        unindexedempty = True
+        pagenumber = 1
+        for i in range(len(filelist)):
+            if filelist[i] == "### TABLE OF CONTENTS ###":
+                tocpassed = True
+                pagenumber += tocnumpages
+            else:
                 pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
-                toclist += "\"" + titlelist[i] + "\"" + " " + str(pagenumber) + "\n"
+                if tocpassed:              
+                    toclist += "\"" + titlelist[i] + "\"" + " " + str(pagenumber) + "\n"
+                    indexedresult.append("uploads/" + filelist[i])
+                else:
+                    unindexedempty = False
+                    unindexedresult.append("uploads/" + filelist[i])
                 pagenumber += pdf.getNumPages()
-                indexedresult.append("uploads/" + filelist[i])
+
         # Save the table of contents pdf bookmark list for later
         f = open("toc", "w")
         f.write(toclist)
@@ -218,20 +225,16 @@ def compile():
             # Write the merged output
             with open(indexedfile, 'wb') as fh:
                 mergeWriter.write(fh)
-        
-        # Create a pdf file with the table of contents bookmarks
-        os.system("export PATH=$PATH:/usr/local/bin; pdftocio " + indexedfile + " < toc")
-        os.remove("toc")
-        os.remove(indexedfile)
 
         # Compile table of contents with the pdf
         if toc:
             result = PyPDF2.PdfMerger()
             result.append(tocfile)
-            result.append(indexedfileoutlined)
+            result.append(indexedfile)
             result.write(indexedfilewithtoc)
             result.close()
             os.remove(tocfile)
+            os.remove(indexedfile)
             # Add non-indexed files, if applicable:
             if unindexedempty:
                 os.rename(indexedfilewithtoc, final)
@@ -241,8 +244,25 @@ def compile():
                 result.append(indexedfilewithtoc)
                 result.write(final)
                 result.close()
+                os.remove(unindexedfile)
+                os.remove(indexedfilewithtoc)
         else:
-            os.rename(indexedfileoutlined, final)
+            if unindexedempty:
+                os.rename(indexedfile, final)
+            else:
+                result = PyPDF2.PdfMerger()
+                result.append(unindexedfile)
+                result.append(indexedfile)
+                result.write(final)
+                result.close()
+                os.remove(unindexedfile)
+                os.remove(indexedfile)
+
+        # Create a pdf file with the table of contents bookmarks
+        os.system("export PATH=$PATH:/usr/local/bin; pdftocio " + final + " < toc")
+        os.remove("toc")
+        os.remove(final)
+        os.rename(finaloutlined, final)
 
         # Download the final result
         return send_file(final, as_attachment=True)
