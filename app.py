@@ -8,7 +8,7 @@ app = Flask(__name__)
 # Page numbering class taken from https://stackoverflow.com/a/68382694/3130769
 class NumberPDF(FPDF):
     def __init__(self, numberOfPages: int, pagenumberformat: int, pagenumberfont: str, pagenumbersize: int, pagenumbermargin: float):
-        super(NumberPDF, self).__init__()
+        super().__init__("P", "in", "Letter")
         self.numberOfPages = numberOfPages
         self.pagenumberformat = pagenumberformat
         self.pagenumberfont = pagenumberfont
@@ -21,16 +21,16 @@ class NumberPDF(FPDF):
 
     # Overload Footer
     def footer(self):
-        self.set_y(-self.pagenumbermargin*25.4) # Convert from inches to millimeters
+        self.set_y(-self.pagenumbermargin)
         self.set_font(self.pagenumberfont, '', self.pagenumbersize)
         if self.pagenumberformat == 1:
-            self.cell(0, 10, f"{self.page_no()}", 0, 0, 'C')
+            self.cell(0, 0, f"{self.page_no()}", 0, 0, 'C')
         elif self.pagenumberformat == 2:
-            self.cell(0, 10, f"{self.page_no()} of {self.numberOfPages}", 0, 0, 'C')
+            self.cell(0, 0, f"{self.page_no()} of {self.numberOfPages}", 0, 0, 'C')
         elif self.pagenumberformat == 3:
-            self.cell(0, 10, f"Page {self.page_no()}", 0, 0, 'C')
+            self.cell(0, 0, f"Page {self.page_no()}", 0, 0, 'C')
         else:
-            self.cell(0, 10, f"Page {self.page_no()} of {self.numberOfPages}", 0, 0, 'C')
+            self.cell(0, 0, f"Page {self.page_no()} of {self.numberOfPages}", 0, 0, 'C')
         
 
 # Go to file upload initially
@@ -102,16 +102,16 @@ def compile():
             # Gather user-defined length and size criteria
             tocheaderfont = request.form.get("tocheaderfont")
             tocheadersize = int(request.form.get("tocheadersize"))
-            tocheaderspacing = 25.4*float(request.form.get("tocheaderspacing")) # Converted to mm
+            tocheaderspacing = float(request.form.get("tocheaderspacing"))
             toclistitemfont = request.form.get("toclistitemfont")
             toclistitemsize = int(request.form.get("toclistitemsize"))
-            tocverticalmargin = 25.4*float(request.form.get("tocverticalmargin")) # Converted to mm
-            tochorizontalmargin = 25.4*float(request.form.get("tochorizontalmargin")) # Converted to mm
-            cellwidth = (215.9-2*tochorizontalmargin)   # 8.5 inches minus twice the horizontal margin
-            toclistitemspacing = 25.4*float(request.form.get("toclistitemspacing")) #Converted to mm
+            tocverticalmargin = float(request.form.get("tocverticalmargin"))
+            tochorizontalmargin = float(request.form.get("tochorizontalmargin"))
+            cellwidth = (8.5-2*tochorizontalmargin)   # 8.5 inches minus twice the horizontal margin
+            toclistitemspacing = float(request.form.get("toclistitemspacing"))
 
             # Create table of contents page
-            contents = FPDF()
+            contents = FPDF("P", "in", "Letter")
             contents.add_page()
 
             # Create table of contents header
@@ -138,7 +138,7 @@ def compile():
                         y += toclistitemspacing
                         tocpagenumber += pdf.getNumPages()
                         # Continue table of contents onto another page if no more room
-                        if y > 279.4 - tocverticalmargin:
+                        if y > 11.5 - tocverticalmargin:
                             contents.add_page()
                             tocnumpages += 1 # Add page number for bookmarks
                             y = tocverticalmargin
