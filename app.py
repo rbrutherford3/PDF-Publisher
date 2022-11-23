@@ -34,11 +34,11 @@ class NumberPDF(FPDF):
         
 
 # Go to file upload initially
-@app.route("/")
+@app.route("/pdfpublisher/")
 def upload():
     return render_template("upload.html")
 
-@app.route('/success', methods = ['POST'])
+@app.route('/pdfpublisher/success', methods = ['POST'])
 def success():
     uploads = "uploads"
     result = "result.pdf"
@@ -70,7 +70,7 @@ def success():
         return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
 
 # Gather .pdf documents, create page numbers and table of contents, and merge
-@app.route('/compile', methods = ['POST'])
+@app.route('/pdfpublisher/compile', methods = ['POST'])
 def compile():
         # Remove previous .pdf files
         for filename in os.listdir(os.getcwd()):
