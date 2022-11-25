@@ -3,3 +3,4 @@ uploads/
 pdfoutline.py
 *.pdf
 .vscode/
+recaptchav3.py

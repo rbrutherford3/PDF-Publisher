@@ -2,6 +2,8 @@ from flask import *
 import os
 import PyPDF2
 from fpdf import FPDF
+from recaptchav3 import reCAPTCHAv3
+import requests
 
 app = Flask(__name__)
 
@@ -36,42 +38,64 @@ class NumberPDF(FPDF):
 # Go to file upload initially
 @app.route("/pdfpublisher/")
 def upload():
-    return render_template("upload.html")
+    return render_template("upload.html", reCAPTCHA_site_key=reCAPTCHAv3.site_key)
 
 @app.route('/pdfpublisher/success', methods = ['POST'])
 def success():
     uploads = "uploads"
     result = "result.pdf"
     if request.method == 'POST':
-        # Get rid of old result, if it exist
-        if os.path.exists(result):
-            os.remove(result)
-        # Create uploads folder if it doesn't exist:
-        if not os.path.exists(uploads):
-            os.mkdir(uploads)
+        parameters = request.form
+        recaptcha_passed = False
+        recaptcha_response = parameters.get('g-recaptcha-response')
+        try:
+            recaptcha_secret = reCAPTCHAv3.secret_key
+            response = requests.post(f'https://www.google.com/recaptcha/api/siteverify?secret={recaptcha_secret}&response={recaptcha_response}').json()
+            recaptcha_passed = response.get('success')
+        except Exception as e:
+            print(f"failed to get reCaptcha: {e}")
+        if recaptcha_passed:
+            # Get rid of old result, if it exist
+            if os.path.exists(result):
+                os.remove(result)
+            # Create uploads folder if it doesn't exist:
+            if not os.path.exists(uploads):
+                os.mkdir(uploads)
+            else:
+                # Get ride of old uploads, if they exist
+                oldfiles = os.listdir(uploads)
+                for f in oldfiles:
+                    os.remove(os.path.join(uploads, f))
+            # Save each .docx, convert to .pdf, delete .docx
+            filelist = request.files.getlist("file")
+            justnames = []
+            for f in filelist:
+                filename, extension = os.path.splitext(f.filename)
+                justnames.append(filename)
+                f.save(os.path.join(uploads, f.filename))
+                if extension == ".doc" or extension == ".docx":
+                    os.system("export PATH=$PATH:/usr/bin; libreoffice --headless --convert-to pdf '" + uploads + "/" + f.filename + "' --outdir " + uploads)
+                    os.remove(os.path.join(uploads, f.filename))
+            justnames.append("TABLE OF CONTENTS")
+            justnames.reverse()
+            # Send bare filenames to 'arrange.html' for ordering
+            return render_template("arrange.html", reCAPTCHA_site_key=reCAPTCHAv3.site_key, pdfs = justnames, pdfslen = len(justnames))
         else:
-            # Get ride of old uploads, if they exist
-            oldfiles = os.listdir(uploads)
-            for f in oldfiles:
-                os.remove(os.path.join(uploads, f))
-        # Save each .docx, convert to .pdf, delete .docx
-        filelist = request.files.getlist("file")
-        justnames = []
-        for f in filelist:
-            filename, extension = os.path.splitext(f.filename)
-            justnames.append(filename)
-            f.save(os.path.join(uploads, f.filename))
-            if extension == ".doc" or extension == ".docx":
-                os.system("export PATH=$PATH:/usr/bin; libreoffice --headless --convert-to pdf '" + uploads + "/" + f.filename + "' --outdir " + uploads)
-                os.remove(os.path.join(uploads, f.filename))
-        justnames.append("TABLE OF CONTENTS")
-        justnames.reverse()
-        # Send bare filenames to 'arrange.html' for ordering
-        return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
+            return "Homosapiens only, please!"
 
 # Gather .pdf documents, create page numbers and table of contents, and merge
 @app.route('/pdfpublisher/compile', methods = ['POST'])
 def compile():
+    parameters = request.form
+    recaptcha_passed = False
+    recaptcha_response = parameters.get('g-recaptcha-response')
+    try:
+        recaptcha_secret = reCAPTCHAv3.secret_key
+        response = requests.post(f'https://www.google.com/recaptcha/api/siteverify?secret={recaptcha_secret}&response={recaptcha_response}').json()
+        recaptcha_passed = response.get('success')
+    except Exception as e:
+        print(f"failed to get reCaptcha: {e}")
+    if recaptcha_passed:
         # Remove previous .pdf files
         for filename in os.listdir(os.getcwd()):
             if filename.lower().endswith("pdf"):
@@ -266,6 +290,8 @@ def compile():
 
         # Download the final result
         return send_file(final, as_attachment=True)
+    else:
+        return "Humans only.  Seat's taken."
 
 if __name__ == "__main__":
     app.run()

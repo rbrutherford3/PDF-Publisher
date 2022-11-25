@@ -3,6 +3,15 @@
 <head>
 	<title>Arrange titles</title>
 	<script src="static/arrange.js"></script>
+    <script src="https://www.google.com/recaptcha/api.js?render={{ reCAPTCHA_site_key }}"></script>
+    <script>
+        grecaptcha.ready(function () {
+            grecaptcha.execute('{{ reCAPTCHA_site_key }}', {action: 'validate_captcha'}).then(function (token) {
+                console.info("got token: " + token);
+                document.getElementById('g-recaptcha-response').value = token;
+            });
+        });
+    </script>
 	<link rel="stylesheet" href="static/style.css">
 </head>
 <body>
@@ -96,6 +105,8 @@
 			<label for="tochorizontalmargin">Table of contents horizontal margin (inches)</label>
 		</div>
 		<h2>Submit for merging:</h2>
+        <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response">
+        <input type="hidden" name="action" value="validate_captcha">		
 		<input type="submit" value="Merge" onClick="submitPDF()" />
 	</form>
 </body>
