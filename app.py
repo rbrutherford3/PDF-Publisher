@@ -73,7 +73,7 @@ def success():
                 filename, extension = os.path.splitext(f.filename)
                 justnames.append(filename)
                 f.save(os.path.join(uploads, f.filename))
-                if extension == ".doc" or extension == ".docx":
+                if extension == ".doc" or extension == ".docx" or extension == ".odt":
                     os.system("export PATH=$PATH:/usr/bin; libreoffice --headless --convert-to pdf '" + uploads + "/" + f.filename + "' --outdir " + uploads)
                     os.remove(os.path.join(uploads, f.filename))
             justnames.append("TABLE OF CONTENTS")
