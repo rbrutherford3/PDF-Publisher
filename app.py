@@ -136,6 +136,7 @@ def compile():
 
             # Create table of contents page
             contents = FPDF("P", "in", "Letter")
+            contents.set_auto_page_break(False)
             contents.add_page()
 
             # Create table of contents header
@@ -162,7 +163,7 @@ def compile():
                         y += toclistitemspacing
                         tocpagenumber += pdf.getNumPages()
                         # Continue table of contents onto another page if no more room
-                        if y > 11.5 - tocverticalmargin:
+                        if y > 11 - tocverticalmargin:
                             contents.add_page()
                             tocnumpages += 1 # Add page number for bookmarks
                             y = tocverticalmargin
