@@ -4,13 +4,7 @@ function up(a) {
 	var a = document.getElementById(listNum - 1);
 	var b = document.getElementById(listNum);
 	a.parentNode.insertBefore(b, a);
-	a.id = listNum;
-	b.id = listNum - 1;
-	var c = document.getElementById("title" + (listNum - 1));
-	var d = document.getElementById("title" + listNum);
-	c.id = "title" + listNum;
-	d.id = "title" + (listNum - 1);
-	disableButtons()
+	reOrder();
 }
 
 // Function to swap two list items when clicking the "down" button, including their custom title
@@ -19,30 +13,7 @@ function down(a) {
 	var a = document.getElementById(listNum + 1);
 	var b = document.getElementById(listNum);
 	a.parentNode.insertBefore(a, b);
-	a.id = listNum;
-	b.id = listNum + 1;
-	var c = document.getElementById("title" + (listNum + 1));
-	var d = document.getElementById("title" + listNum);
-	c.id = "title" + listNum;
-	d.id = "title" + (listNum + 1);	
-	disableButtons()
-}
-
-// Enable all buttons except the top "up" button and bottom "down" button
-function disableButtons() {
-	numButtons = parseInt(document.getElementById("pdfslen").value);
-	for (i = 0; i < numButtons; i++) {
-		var buttonUp = document.getElementById("up" + i)
-		if (parseInt(buttonUp.parentNode.id) == 0)
-			buttonUp.style.visibility = "hidden";
-		else
-			buttonUp.style.visibility = "visible";		
-		var buttonDown = document.getElementById("down" + i)
-		if (parseInt(buttonDown.parentNode.id) == (numButtons - 1))
-			buttonDown.style.visibility = "hidden";
-		else
-			buttonDown.style.visibility = "visible";
-	}
+	reOrder();
 }
 
 // Enable controls for page numbers only if enabling page numbers, and vice-versa
@@ -80,4 +51,90 @@ function submitPDF() {
 	}
 	document.getElementById("finalorder").value = formatted;
 	document.getElementById("titles").value = titles;
+}
+
+// Taken from https://stackoverflow.com/a/59536432/3130769
+
+window.onload = function() {
+
+	let dragged;
+	let id;
+	let index;
+	let indexDrop;
+	let list;
+
+	document.addEventListener("dragstart", ({target}) => {
+		dragged = target;
+		id = target.id;
+		list = target.parentNode.children;
+		for (let i = 0; i < list.length; i += 1) {
+			if (list[i] === dragged){
+				index = i;
+			}
+		}
+	});
+
+	document.addEventListener("dragover", (event) => {
+		event.preventDefault();
+	});
+
+	document.addEventListener("drop", ({target}) => {
+		var valid = false;
+		if (target.className == "dropzone" && target.id !== id) {
+			var newtarget = target
+			valid = true;
+		}
+		else if (target.parentNode.className == "dropzone" && target.parentNode.id !== id) {
+			var newtarget = target.parentNode
+			valid = true;
+		}
+		if (valid) {
+			dragged.remove( dragged );
+			for(let i = 0; i < list.length; i += 1) {
+				if(list[i] === newtarget){
+					indexDrop = i;
+				}
+			}
+			console.log(index, indexDrop);
+			if(index > indexDrop) {
+				newtarget.before( dragged );
+			} else {
+				newtarget.after( dragged );
+			}
+			reOrder();	
+		}
+	});
+}
+
+// Function to correct the ids of each element after re-ordering
+// and adjust visibility of arrows
+function reOrder() {
+	var ol = document.getElementById("pdforder");
+	var node = ol.firstChild;
+	var count = 0;
+	while (node) {
+		if (node.tagName === 'LI') {
+			node.id = count;
+			var t = node.childNodes;
+			for(i=0; i < t.length; i++) {
+				if (t[i].tagName === 'INPUT') {
+					if (t[i].id.startsWith("up")) {
+						t[i].id = "up" + count.toString();
+						t[i].style.visibility = "visible";
+					}
+					else if (t[i].id.startsWith("down")) {
+						t[i].id = "down" + count.toString();
+						t[i].style.visibility = "visible";
+					}
+					else if (t[i].id.startsWith("title"))
+						t[i].id = "title" + count.toString();
+				}
+			}
+			count++;
+		}
+		node = node.nextSibling;
+	}
+	var maxCount = count - 1;
+	document.getElementById("up0").style.visibility = "hidden";
+	document.getElementById("down" + maxCount.toString()).style.visibility = "hidden";
 }
