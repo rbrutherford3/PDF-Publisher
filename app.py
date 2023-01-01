@@ -76,8 +76,6 @@ def success():
                 if extension == ".doc" or extension == ".docx" or extension == ".odt":
                     os.system("export PATH=$PATH:/usr/bin; libreoffice --headless --convert-to pdf '" + uploads + "/" + f.filename + "' --outdir " + uploads)
                     os.remove(os.path.join(uploads, f.filename))
-            justnames.append("TABLE OF CONTENTS")
-            justnames.reverse()
             # Send bare filenames to 'arrange.html' for ordering
             return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
         else:
@@ -106,6 +104,15 @@ def compile():
     filelist = filenames.split('$')
     titlelist = titles.split('$')
 
+    # Get page numbering 
+    pagenumbers = request.form.get("pagenumbers")
+    if pagenumbers:
+        pagenumberformat = int(request.form.get("pagenumberformat"))
+        pagenumberfont = request.form.get("pagenumberfont")
+        pagenumbersize = int(request.form.get("pagenumbersize"))
+        pagenumbermargin = float(request.form.get("pagenumbermargin"))
+        numberingstart = request.form.get("numberingstart")
+
     # Create merge object, define initial conditions
     indexedresult = PyPDF2.PdfMerger()
     unindexedresult = PyPDF2.PdfMerger()
@@ -125,6 +132,28 @@ def compile():
         cellwidth = (8.5-2*tochorizontalmargin)   # 8.5 inches minus twice the horizontal margin
         toclistitemspacing = float(request.form.get("toclistitemspacing"))
 
+        # Do T.O.C. dry-run to get T.O.C. number of pages (necessary if T.O.C. is counted with page numbers)
+        y = tocverticalmargin
+        tocpassed = False
+        tocnumpages += 1
+        beginnumbering = False
+        
+        y += tocheaderspacing
+        for i in range(len(filelist)):
+            if filelist[i] == numberingstart:
+                beginnumbering = True
+            if filelist[i] == "### TABLE OF CONTENTS ###":
+                tocpassed = True
+            else:
+                pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
+                if beginnumbering:
+                    if tocpassed:
+                        y += toclistitemspacing
+                        # Continue table of contents onto another page if no more room
+                        if y > 11 - tocverticalmargin:
+                            tocnumpages += 1 # Add page number for bookmarks
+                            y = tocverticalmargin
+
         # Create table of contents page
         contents = FPDF("P", "in", "Letter")
         contents.set_auto_page_break(False)
@@ -136,47 +165,53 @@ def compile():
         contents.set_xy(tochorizontalmargin, y)
         contents.cell(cellwidth, 0, "Table of Contents", 0, 0, "C")
         tocpassed = False
-        tocnumpages += 1
+        beginnumbering = False
 
         # Loop through each item in the list of documents and add them to the T.O.C.
         y += tocheaderspacing
         contents.set_font(toclistitemfont, '', toclistitemsize)
         for i in range(len(filelist)):
+            if filelist[i] == numberingstart:
+                beginnumbering = True
             if filelist[i] == "### TABLE OF CONTENTS ###":
                 tocpassed = True
+                tocpagenumber += tocnumpages
             else:
                 pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
-                if tocpassed:
-                    contents.set_xy(tochorizontalmargin, y)
-                    contents.cell(cellwidth, 0, titlelist[i], 0, 0, 'L')
-                    contents.set_xy(tochorizontalmargin, y)
-                    contents.cell(cellwidth, 0, str(tocpagenumber), 0, 0, 'R')
-                    y += toclistitemspacing
+                if beginnumbering:
+                    if tocpassed:
+                        contents.set_xy(tochorizontalmargin, y)
+                        contents.cell(cellwidth, 0, titlelist[i], 0, 0, 'L')
+                        contents.set_xy(tochorizontalmargin, y)
+                        contents.cell(cellwidth, 0, str(tocpagenumber), 0, 0, 'R')
+                        y += toclistitemspacing
+                        # Continue table of contents onto another page if no more room
+                        if y > 11 - tocverticalmargin:
+                            contents.add_page()
+                            y = tocverticalmargin
                     tocpagenumber += pdf.getNumPages()
-                    # Continue table of contents onto another page if no more room
-                    if y > 11 - tocverticalmargin:
-                        contents.add_page()
-                        tocnumpages += 1 # Add page number for bookmarks
-                        y = tocverticalmargin
         contents.output(tocfile)    # Save the T.O.C. file for later
     
     # Create bookmarks in PDF file and assemble PDFs
-    tocpassed = False
+    beginnumbering = False
     unindexedempty = True
     pagenumber = 1
     for i in range(len(filelist)):
+        if filelist[i] == numberingstart:
+            beginnumbering = True
         if filelist[i] == "### TABLE OF CONTENTS ###":
-            tocpassed = True
-            pagenumber += tocnumpages
+            pdffile = tocfile
+            toclist += "\"Table of Contents\" " + str(pagenumber) + "\n"
         else:
-            pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
-            if tocpassed:              
-                toclist += "\"" + titlelist[i] + "\"" + " " + str(pagenumber) + "\n"
-                indexedresult.append("uploads/" + filelist[i])
-            else:
-                unindexedempty = False
-                unindexedresult.append("uploads/" + filelist[i])
-            pagenumber += pdf.getNumPages()
+            pdffile = "uploads/" + filelist[i]
+            toclist += "\"" + titlelist[i] + "\" " + str(pagenumber) + "\n"
+        if beginnumbering:
+            indexedresult.append(pdffile)
+        else:
+            unindexedempty = False
+            unindexedresult.append(pdffile)
+        pdf = PyPDF2.PdfFileReader(pdffile)
+        pagenumber += pdf.getNumPages()
 
     # Save the table of contents pdf bookmark list for later
     f = open("toc", "w")
@@ -195,7 +230,7 @@ def compile():
     for f in uploads:
         os.remove(os.path.join("uploads", f))
     
-    if request.form.get("pagenumbers"):
+    if pagenumbers:
         # Page numbering code taken from https://stackoverflow.com/a/68382694/3130769
         original = "originalresult.pdf"
         os.rename(indexedfile, original)
@@ -205,10 +240,6 @@ def compile():
         # Create a temporary numbering PDF using the overloaded FPDF class, passing the number of pages
         # from your original file
         numpages = inputFile.getNumPages()
-        pagenumberformat = int(request.form.get("pagenumberformat"))
-        pagenumberfont = request.form.get("pagenumberfont")
-        pagenumbersize = int(request.form.get("pagenumbersize"))
-        pagenumbermargin = float(request.form.get("pagenumbermargin"))
         tempNumFile = NumberPDF(numpages, pagenumberformat, pagenumberfont, pagenumbersize, pagenumbermargin)
 
         # Add a new page to the temporary numbering PDF (the footer function runs on add_page and will 
@@ -242,37 +273,17 @@ def compile():
         with open(indexedfile, 'wb') as fh:
             mergeWriter.write(fh)
 
-    # Compile table of contents with the pdf
-    if toc:
-        result = PyPDF2.PdfMerger()
-        result.append(tocfile)
-        result.append(indexedfile)
-        result.write(indexedfilewithtoc)
-        result.close()
-        os.remove(tocfile)
-        os.remove(indexedfile)
-        # Add non-indexed files, if applicable:
-        if unindexedempty:
-            os.rename(indexedfilewithtoc, final)
-        else:
-            result = PyPDF2.PdfMerger()
-            result.append(unindexedfile)
-            result.append(indexedfilewithtoc)
-            result.write(final)
-            result.close()
-            os.remove(unindexedfile)
-            os.remove(indexedfilewithtoc)
+    # Compile the pdf
+    if unindexedempty:
+        os.rename(indexedfile, final)
     else:
-        if unindexedempty:
-            os.rename(indexedfile, final)
-        else:
-            result = PyPDF2.PdfMerger()
-            result.append(unindexedfile)
-            result.append(indexedfile)
-            result.write(final)
-            result.close()
-            os.remove(unindexedfile)
-            os.remove(indexedfile)
+        result = PyPDF2.PdfMerger()
+        result.append(unindexedfile)
+        result.append(indexedfile)
+        result.write(final)
+        result.close()
+        os.remove(unindexedfile)
+        os.remove(indexedfile)
 
     # Create a pdf file with the table of contents bookmarks
     os.system("export PATH=$PATH:/usr/local/bin; pdftocio " + final + " < toc")

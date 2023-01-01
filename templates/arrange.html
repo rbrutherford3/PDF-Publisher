@@ -6,24 +6,11 @@
 	<link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-	<form action="compile" method="post">
+	<form action="compile" method="post" onsubmit="return checkPageNumberStart();">
 		<h1>Merge files and convert to .pdf</h1>
-		<h2>Change order of documents:</h2>
-		<ol id="pdforder">
-			{%for i in range(0, pdfslen)%}
-    		<li class="dropzone" id="{{ i }}" {% if i == 0 %}data-filename="### TABLE OF CONTENTS ###"{% else %}data-filename="{{ pdfs[i] + '.pdf' }}"{% endif %} draggable="true">
-				<input class="arrow" id="up{{ i }}" type="button" value="&#129061;" onClick=up(this.parentElement) {% if i == 0 %}style="visibility: hidden;"{% endif %}/>
-				<input class="arrow" id="down{{ i }}" type="button" value="&#129063;" onClick=down(this.parentElement) {% if i == pdfslen - 1 %}style="visibility: hidden;"{% endif %}/>
-				<input type="text" id="title{{ i }}" value="{{ pdfs[i] }}" {% if i == 0 %}class="toc" disabled{%endif%}/>
-			</li>
-			{%endfor%}
-		</ol>
-		<input type="hidden" id="pdfslen" value="{{ pdfslen }}" />
-		<input type="hidden" id="finalorder" name="finalorder" />
-		<input type="hidden" id="titles" name="titles" />
 		<h2>Specify options</h2>
 		<div class="option">
-			<input type="checkbox" id="pagenumbers" name="pagenumbers" onClick="pageNumberControls()" />
+			<input type="checkbox" id="pagenumbers" name="pagenumbers" onClick="pageNumberControls(); togglePageNumbers();" />
 			<label for="pagenumbers">Add page numbers</label>
 		</div>
 		<div class="option">
@@ -52,7 +39,7 @@
 			<label for="pagenumbermargin">Page number margin (inches)</label>
 		</div>
 		<div class="option">
-			<input type="checkbox" id="toc" name="toc" onClick="tocControls()" />
+			<input type="checkbox" id="toc" name="toc" onClick="tocControls(); toggleTOC();" disabled />
 			<label for="toc">Add table of contents</label>
 		</div>
 		<div class="option">
@@ -95,6 +82,30 @@
 			<input type="number" id="tochorizontalmargin" name="tochorizontalmargin" min="0.0625" max="1.5" step="0.0625" value="1" disabled />
 			<label for="tochorizontalmargin">Table of contents horizontal margin (inches)</label>
 		</div>
+		<h2>Change order of documents:</h2>
+		<ol id="pdforder">
+			{%for i in range(0, pdfslen)%}
+    		<li class="dropzone" id="{{ i }}" data-filename="{{ pdfs[i] + '.pdf' }}" draggable="true">
+				<input class="arrow" id="up{{ i }}" type="button" value="&#129061;" onClick=up(this.parentElement) {% if i == 0 %}style="visibility: hidden;"{% endif %}/>
+				<input class="arrow" id="down{{ i }}" type="button" value="&#129063;" onClick=down(this.parentElement) {% if i == pdfslen - 1 %}style="visibility: hidden;"{% endif %}/>
+				<input type="text" id="title{{ i }}" value="{{ pdfs[i] }}" />
+				<input type="radio" name="numberingstart" id="numberingstart{{i}}" value="{{ pdfs[i] + '.pdf' }}" style="visibility: hidden;">
+				<label id="numberingstartlabel{{i}}" for="numberingstart{{i}}" style="visibility: hidden;">Begin page numbering here</label>
+			</li>
+			{%endfor%}
+		</ol>
+		<ol id="toclist" style="visibility: hidden;">
+			<li class="dropzone" id="toclistitem" data-filename="### TABLE OF CONTENTS ###" draggable="true">
+				<input class="arrow" id="upTOC" type="button" value="&#129061;" onClick=up(this.parentElement) />
+				<input class="arrow" id="downTOC" type="button" value="&#129063;" onClick=down(this.parentElement) />
+				<input type="text" id="titleTOC" value="TABLE OF CONTENTS" class="toc" disabled/>
+				<input type="radio" id="numberingstartTOC" name="numberingstart" value="### TABLE OF CONTENTS ###" style="visibility: hidden;">
+				<label id="numberingstartlabelTOC" for="numberingstartTOC" style="visibility: hidden;">Begin page numbering here</label>
+			</li>
+		</ol>
+		<input type="hidden" id="pdfslen" value="{{ pdfslen }}" />
+		<input type="hidden" id="finalorder" name="finalorder" />
+		<input type="hidden" id="titles" name="titles" />
 		<h2>Submit for merging:</h2>
 		<input type="submit" value="Merge" onClick="submitPDF()" />
 	</form>

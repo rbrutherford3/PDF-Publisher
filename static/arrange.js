@@ -115,9 +115,10 @@ function reOrder() {
 	while (node) {
 		if (node.tagName === 'LI') {
 			node.id = count;
+			node.style.visibility = "visible";
 			var t = node.childNodes;
 			for(i=0; i < t.length; i++) {
-				if (t[i].tagName === 'INPUT') {
+				if (t[i].tagName === 'INPUT' || t[i].tagName === 'LABEL') {
 					if (t[i].id.startsWith("up")) {
 						t[i].id = "up" + count.toString();
 						t[i].style.visibility = "visible";
@@ -128,6 +129,12 @@ function reOrder() {
 					}
 					else if (t[i].id.startsWith("title"))
 						t[i].id = "title" + count.toString();
+					else if (t[i].id.startsWith("numberingstartlabel")) {
+						t[i].id = "numberingstartlabel" + count.toString();
+						t[i].setAttribute("for", "numberingstart" + count.toString());
+					}
+					else if (t[i].id.startsWith("numberingstart"))
+						t[i].id = "numberingstart" + count.toString();
 				}
 			}
 			count++;
@@ -137,4 +144,106 @@ function reOrder() {
 	var maxCount = count - 1;
 	document.getElementById("up0").style.visibility = "hidden";
 	document.getElementById("down" + maxCount.toString()).style.visibility = "hidden";
+
+	// Re-loop through elements and show/hide the page number start radio buttons
+	var node = ol.firstChild;
+	var justdone = false;
+	var donecountdown = 2;
+	var done = false;
+	while (node) {
+		if (node.tagName === 'LI') {
+			var t = node.childNodes;
+			for(i=0; i < t.length; i++) {
+				if (t[i].tagName === 'INPUT' || t[i].tagName === 'LABEL') {
+					if (t[i].id.startsWith("numberingstart")) {
+						if (done || !document.getElementById("pagenumbers").checked)
+							t[i].style.visibility = "hidden";
+						else
+							t[i].style.visibility = "visible";
+					}
+					else if (t[i].className == "toc")
+						justdone = true;
+				}
+			}
+			if (donecountdown == 1 || justdone)
+				donecountdown--;
+			if (donecountdown == 0)
+				done = true;
+		}
+		node = node.nextSibling;
+	}
+}
+
+// Function to show or hide the "Table of Contents" item
+function toggleTOC() {
+	if (document.getElementById("toc").checked)
+		document.getElementById("pdforder").firstChild.before(document.getElementById("toclistitem"))
+	else {
+		var ol = document.getElementById("pdforder");
+		var node = ol.firstChild;
+		var count = 0;
+		while (node) {
+			if (node.tagName === 'LI') {
+				if (node.getAttribute("data-filename") == "### TABLE OF CONTENTS ###") {
+					node.id = "toclistitem";
+					node.style.visibility = "hidden";
+					var t = node.childNodes;
+					for(i=0; i < t.length; i++) {
+						if (t[i].tagName === 'INPUT' || t[i].tagName === 'LABEL') {
+							if (t[i].id.startsWith("up"))
+								t[i].style.visibility = "hidden";
+							else if (t[i].id.startsWith("down"))
+								t[i].style.visibility = "hidden";
+							else if (t[i].id.startsWith("numberingstartlabel"))
+								t[i].style.visibility = "hidden";
+							else if (t[i].id.startsWith("numberingstart"))
+								t[i].style.visibility = "hidden";
+						}
+					}
+					document.getElementById("toclist").append(node);
+				}
+			}
+			node = node.nextSibling;
+		}
+	}
+	reOrder();
+}
+
+// Function to show or hide the 
+function togglePageNumbers() {
+	if (document.getElementById("pagenumbers").checked) {
+		document.getElementById("toc").disabled = false;
+	}
+	else {
+		if (document.getElementById("toc").checked) {
+			document.getElementById("toc").checked = false;
+			tocControls();
+			toggleTOC();
+		}
+		document.getElementById("toc").disabled = true;
+	}
+	reOrder();
+}
+
+// Make sure that an item is selected for page number start if necessary
+function checkPageNumberStart() {
+	var selection = false;
+	if (document.getElementById("pagenumbers").checked) {
+		var els = document.getElementsByName("numberingstart");
+		for (var i=0; i<els.length; i++) {
+			if (els[i].checked) {
+				var selected = els[i];
+				selection = true;
+			}
+		}
+		if (selection) {
+			if (selected.style.visibility == "hidden")
+				selection = false;
+		}
+	}
+	else
+		selection = true;
+	if (selection == false)
+		alert("Please select somewhere for page numbering to begin");
+	return selection;
 }
