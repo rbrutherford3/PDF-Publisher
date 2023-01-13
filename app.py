@@ -145,7 +145,7 @@ def compile():
             if filelist[i] == "### TABLE OF CONTENTS ###":
                 tocpassed = True
             else:
-                pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
+                pdf = PyPDF2.PdfReader("uploads/" + filelist[i])
                 if beginnumbering:
                     if tocpassed:
                         y += toclistitemspacing
@@ -177,7 +177,7 @@ def compile():
                 tocpassed = True
                 tocpagenumber += tocnumpages
             else:
-                pdf = PyPDF2.PdfFileReader("uploads/" + filelist[i])
+                pdf = PyPDF2.PdfReader("uploads/" + filelist[i])
                 if beginnumbering:
                     if tocpassed:
                         contents.set_xy(tochorizontalmargin, y)
@@ -189,7 +189,7 @@ def compile():
                         if y > 11 - tocverticalmargin:
                             contents.add_page()
                             y = tocverticalmargin
-                    tocpagenumber += pdf.getNumPages()
+                    tocpagenumber += len(pdf.pages)
         contents.output(tocfile)    # Save the T.O.C. file for later
     
     # Create bookmarks in PDF file and assemble PDFs
@@ -210,8 +210,8 @@ def compile():
         else:
             unindexedempty = False
             unindexedresult.append(pdffile)
-        pdf = PyPDF2.PdfFileReader(pdffile)
-        pagenumber += pdf.getNumPages()
+        pdf = PyPDF2.PdfReader(pdffile)
+        pagenumber += len(pdf.pages)
 
     # Save the table of contents pdf bookmark list for later
     f = open("toc", "w")
@@ -235,35 +235,35 @@ def compile():
         original = "originalresult.pdf"
         os.rename(indexedfile, original)
         # Grab the file you want to add pages to
-        inputFile = PyPDF2.PdfFileReader(original)
+        inputFile = PyPDF2.PdfReader(original)
 
         # Create a temporary numbering PDF using the overloaded FPDF class, passing the number of pages
         # from your original file
-        numpages = inputFile.getNumPages()
+        numpages = len(inputFile.pages)
         tempNumFile = NumberPDF(numpages, pagenumberformat, pagenumberfont, pagenumbersize, pagenumbermargin)
 
         # Add a new page to the temporary numbering PDF (the footer function runs on add_page and will 
         # put the page number at the bottom, all else will be blank
-        for page in range(inputFile.getNumPages()):
+        for page in range(len(inputFile.pages)):
             tempNumFile.add_page()
 
         # Save the temporary numbering PDF
         tempNumFile.output("tempNumbering.pdf")
 
         # Create a new PDFFileReader for the temporary numbering PDF
-        mergeFile = PyPDF2.PdfFileReader("tempNumbering.pdf")
+        mergeFile = PyPDF2.PdfReader("tempNumbering.pdf")
 
         # Create a new PDFFileWriter for the final output document
-        mergeWriter = PyPDF2.PdfFileWriter()
+        mergeWriter = PyPDF2.PdfWriter()
 
         # Loop through the pages in the temporary numbering PDF
         for pagenumbersize, page in enumerate(mergeFile.pages):
             # Grab the corresponding page from the inputFile
-            inputPage = inputFile.getPage(pagenumbersize)
+            inputPage = inputFile.pages[pagenumbersize]
             # Merge the inputFile page and the temporary numbering page
-            inputPage.mergePage(page)
+            inputPage.merge_page(page)
             # Add the merged page to the final output writer
-            mergeWriter.addPage(inputPage)
+            mergeWriter.add_page(inputPage)
 
         # Delete the temporary file and the input file
         os.remove(original)
