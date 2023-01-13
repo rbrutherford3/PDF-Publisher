@@ -175,7 +175,8 @@ def compile():
                 beginnumbering = True
             if filelist[i] == "### TABLE OF CONTENTS ###":
                 tocpassed = True
-                tocpagenumber += tocnumpages
+                if beginnumbering:
+                    tocpagenumber += tocnumpages
             else:
                 pdf = PyPDF2.PdfReader("uploads/" + filelist[i])
                 if beginnumbering:
