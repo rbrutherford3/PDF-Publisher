@@ -4,6 +4,8 @@
 
 This is a Flask app that takes uploaded .doc, .docx, .odt, and .pdf files, converts them to .pdf, allows the user to arrange and rename them, optionally include page numbers and a table of contents (including embedded PDF bookmarks) and then merges them into one big file.
 
+Go to [https://pdfpublisher.spiffindustries.com](https://pdfpublisher.spiffindustries.com) to try it!
+
 ## Table of Contents
 
 - [Background](#background)
