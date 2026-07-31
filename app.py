@@ -1,6 +1,7 @@
-from flask import *
+from flask import Flask, redirect, render_template, request, send_file
 import os
 import shutil
+import subprocess
 import PyPDF2
 from fpdf import FPDF
 from recaptchav3 import reCAPTCHAv3
@@ -50,42 +51,48 @@ def upload():
 def success():
     uploads = "uploads"
     result = "result.pdf"
-    if request.method == 'POST':
-        parameters = request.form
-        recaptcha_passed = False
-        recaptcha_response = parameters.get('g-recaptcha-response')
-        try:
-            recaptcha_secret = reCAPTCHAv3.secret_key
-            response = requests.post(f'https://www.google.com/recaptcha/api/siteverify?secret={recaptcha_secret}&response={recaptcha_response}').json()
-            recaptcha_passed = response.get('success')
-        except Exception as e:
-            print(f"failed to get reCaptcha: {e}")
-        if recaptcha_passed:
-            # Get rid of old result, if it exist
-            if os.path.exists(result):
-                os.remove(result)
-            # Create uploads folder if it doesn't exist:
-            if not os.path.exists(uploads):
-                os.mkdir(uploads)
-            else:
-                # Get ride of old uploads, if they exist
-                oldfiles = os.listdir(uploads)
-                for f in oldfiles:
-                    os.remove(os.path.join(uploads, f))
-            # Save each .docx, convert to .pdf, delete .docx
-            filelist = request.files.getlist("file")
-            justnames = []
-            for f in filelist:
-                filename, extension = os.path.splitext(f.filename)
-                justnames.append(filename)
-                f.save(os.path.join(uploads, f.filename))
-                if extension == ".doc" or extension == ".docx" or extension == ".odt":
-                    os.system("export PATH=$PATH:/usr/bin; libreoffice --headless --convert-to pdf '" + uploads + "/" + f.filename + "' --outdir " + uploads)
-                    os.remove(os.path.join(uploads, f.filename))
-            # Send bare filenames to 'arrange.html' for ordering
-            return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
+    parameters = request.form
+    recaptcha_passed = False
+    recaptcha_response = parameters.get('g-recaptcha-response')
+    try:
+        recaptcha_secret = reCAPTCHAv3.secret_key
+        response = requests.post(f'https://www.google.com/recaptcha/api/siteverify?secret={recaptcha_secret}&response={recaptcha_response}').json()
+        recaptcha_passed = response.get('success')
+    except Exception as e:
+        print(f"failed to get reCaptcha: {e}")
+    if recaptcha_passed:
+        # Get rid of old result, if it exist
+        if os.path.exists(result):
+            os.remove(result)
+        # Create uploads folder if it doesn't exist:
+        if not os.path.exists(uploads):
+            os.mkdir(uploads)
         else:
-            return "Homosapiens only, please!"
+            # Get ride of old uploads, if they exist
+            oldfiles = os.listdir(uploads)
+            for f in oldfiles:
+                os.remove(os.path.join(uploads, f))
+        # Save each .docx, convert to .pdf, delete .docx
+        filelist = request.files.getlist("file")
+        justnames = []
+        for f in filelist:
+            if not f.filename:
+                continue
+            filename, extension = os.path.splitext(f.filename)
+            justnames.append(filename)
+            f.save(os.path.join(uploads, f.filename))
+            if extension == ".doc" or extension == ".docx" or extension == ".odt":
+                env = os.environ.copy()
+                env["PATH"] = env.get("PATH", "") + ":/usr/bin"
+                subprocess.run(
+                    ["libreoffice", "--headless", "--convert-to", "pdf", os.path.join(uploads, f.filename), "--outdir", uploads],
+                    env=env
+                )
+                os.remove(os.path.join(uploads, f.filename))
+        # Send bare filenames to 'arrange.html' for ordering
+        return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
+    else:
+        return "Homosapiens only, please!"
 
 # Gather .pdf documents, create page numbers and table of contents, and merge
 @app.route('/pdfpublisher/compile', methods = ['POST'])
@@ -107,8 +114,8 @@ def compile():
     # Gather filenames in user-specified order and user-specified titles
     filenames = request.form.get("finalorder")
     titles = request.form.get("titles")
-    filelist = filenames.split('$')
-    titlelist = titles.split('$')
+    filelist = filenames.split('$') if filenames else []
+    titlelist = titles.split('$') if titles else []
 
     # Get page numbering 
     pagenumbers = request.form.get("pagenumbers")
@@ -129,15 +136,15 @@ def compile():
     toc = request.form.get("toc")
     if toc:
         # Gather user-defined length and size criteria
-        tocheaderfont = request.form.get("tocheaderfont")
-        tocheadersize = int(request.form.get("tocheadersize"))
-        tocheaderspacing = float(request.form.get("tocheaderspacing"))
-        toclistitemfont = request.form.get("toclistitemfont")
-        toclistitemsize = int(request.form.get("toclistitemsize"))
-        tocverticalmargin = float(request.form.get("tocverticalmargin"))
-        tochorizontalmargin = float(request.form.get("tochorizontalmargin"))
+        tocheaderfont = request.form.get("tocheaderfont", "Arial")
+        tocheadersize = int(request.form.get("tocheadersize", 18))
+        tocheaderspacing = float(request.form.get("tocheaderspacing", 0.5))
+        toclistitemfont = request.form.get("toclistitemfont", "Arial")
+        toclistitemsize = int(request.form.get("toclistitemsize", 12))
+        tocverticalmargin = float(request.form.get("tocverticalmargin", 1))
+        tochorizontalmargin = float(request.form.get("tochorizontalmargin", 1))
         cellwidth = (8.5-2*tochorizontalmargin)   # 8.5 inches minus twice the horizontal margin
-        toclistitemspacing = float(request.form.get("toclistitemspacing"))
+        toclistitemspacing = float(request.form.get("toclistitemspacing", 0.25))
 
         # Do T.O.C. dry-run to get T.O.C. number of pages (necessary if T.O.C. is counted with page numbers)
         y = tocverticalmargin
@@ -265,9 +272,9 @@ def compile():
         mergeWriter = PyPDF2.PdfWriter()
 
         # Loop through the pages in the temporary numbering PDF
-        for pagenumbersize, page in enumerate(mergeFile.pages):
+        for page_idx, page in enumerate(mergeFile.pages):
             # Grab the corresponding page from the inputFile
-            inputPage = inputFile.pages[pagenumbersize]
+            inputPage = inputFile.pages[page_idx]
             # Merge the inputFile page and the temporary numbering page
             inputPage.merge_page(page)
             # Add the merged page to the final output writer
