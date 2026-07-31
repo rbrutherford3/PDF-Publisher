@@ -1,11 +1,17 @@
 from flask import *
 import os
+import shutil
 import PyPDF2
 from fpdf import FPDF
 from recaptchav3 import reCAPTCHAv3
 import requests
 
 app = Flask(__name__)
+
+# Redirect to pdfpublisher on root access
+@app.route("/")
+def root():
+    return redirect("/pdfpublisher/")
 
 # Page numbering class taken from https://stackoverflow.com/a/68382694/3130769
 class NumberPDF(FPDF):
@@ -106,11 +112,12 @@ def compile():
 
     # Get page numbering 
     pagenumbers = request.form.get("pagenumbers")
+    numberingstart = None
     if pagenumbers:
-        pagenumberformat = int(request.form.get("pagenumberformat"))
-        pagenumberfont = request.form.get("pagenumberfont")
-        pagenumbersize = int(request.form.get("pagenumbersize"))
-        pagenumbermargin = float(request.form.get("pagenumbermargin"))
+        pagenumberformat = int(request.form.get("pagenumberformat", 1))
+        pagenumberfont = request.form.get("pagenumberfont", "Arial")
+        pagenumbersize = int(request.form.get("pagenumbersize", 12))
+        pagenumbermargin = float(request.form.get("pagenumbermargin", 0.5))
         numberingstart = request.form.get("numberingstart")
 
     # Create merge object, define initial conditions
@@ -287,10 +294,17 @@ def compile():
         os.remove(indexedfile)
 
     # Create a pdf file with the table of contents bookmarks
-    os.system("export PATH=$PATH:/usr/local/bin; pdftocio " + final + " < toc")
-    os.remove("toc")
-    os.remove(final)
-    os.rename(finaloutlined, final)
+    if shutil.which("pdftocio"):
+        os.system("export PATH=$PATH:/usr/local/bin; pdftocio " + final + " < toc")
+        os.remove("toc")
+        os.remove(final)
+        os.rename(finaloutlined, final)
+    else:
+        # pdftocio not available, skip bookmark creation but keep the PDF
+        if os.path.exists("toc"):
+            os.remove("toc")
+        if os.path.exists(finaloutlined):
+            os.remove(finaloutlined)
 
     # Download the final result
     return send_file(final, as_attachment=True)

@@ -2,8 +2,8 @@
 <html>
 <head>
 	<title>Arrange titles</title>
-	<script src="static/arrange.js"></script>
-	<link rel="stylesheet" href="static/style.css">
+	<script src="{{ url_for('static', filename='arrange.js') }}"></script>
+	<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 	<form action="compile" method="post" onsubmit="return checkPageNumberStart();">
