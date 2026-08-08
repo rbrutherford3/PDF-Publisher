@@ -21,47 +21,63 @@ This app was inspired by my father, who was occasionally asking me to take stori
 
 ## Install
 
-Install [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) on your system.  
+1. Install [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) and the Java components required by the conversion step:
+```
+sudo apt-get update
+sudo apt-get install -y libreoffice libreoffice-java-common
+```
 
-Due to a warning encountered running **LibreOffice** on the command line, you may also need to install the Java components for the software:
+2. Install Python 3 and pip if they are not already available:
 ```
-sudo apt-get install libreoffice-java-common -y
+sudo apt-get install -y python3 python3-pip
 ```
-If you haven't already done so, install Python3 and PIP:
+
+3. Clone the project and change into the repository directory:
 ```
-sudo apt install python3 -y
-sudo apt install python3-pip -y
+git clone https://github.com/rbrutherford3/PDF-Publisher.git
+cd PDF-Publisher
 ```
-Install Flask, PyPDF2, FPDF, and pdf.tocgen:
+
+4. Install the Python dependencies from the project requirements file:
 ```
-sudo pip3 install flask -y
-sudo pip3 install pypdf2 -y
-sudo pip3 install FPDF -y
-sudo pip3 install pdf.tocgen -y
+sudo pip3 install -r requirements.txt
 ```
-Clone the project:
+
+5. Set the reCAPTCHA and CloudConvert environment variables required by the app before running it:
 ```
-git clone https://github.com/rbrutherford3/docx-Publisher.git
+export RECAPTCHA_SITE_KEY="your-site-key"
+export RECAPTCHA_SECRET_KEY="your-secret-key"
+export CLOUDCONVERT_API_KEY="your-cloudconvert-api-key"
 ```
-Optionally adjust the **Flask** settings prior to running:
+Optional: opt back into the sandbox environment if needed:
+```
+export CLOUDCONVERT_SANDBOX=true
+```
+If you are deploying to Vercel, set the same values in your Vercel project environment variables so the app can access them at runtime.
+
+6. Optionally adjust the **Flask** settings prior to running:
 ```
 export FLASK_DEBUG=0
 export FLASK_ENV=development
 ```
-Run the program:
+
+7. Run the program:
 ```
-cd /path/to/docxpublisher
-python3 flask -m flask run
+python3 -m flask run
 ```
+
 You should see something like the following:
 ```
  * Environment: development
  * Debug mode: off
  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
 ```
+
 This means you can now go to `localhost:5000` or `127.0.0.1:5000` in your browser to use the program.
 
-You can also use [**Gunicorn**](https://gunicorn.org/) to set up this project for production, but that is outside the scope of this document
+This project is also compatible with [Vercel](https://vercel.com/), and the same requirements file is used for its Python dependencies.
+
+You can also use [**Gunicorn**](https://gunicorn.org/) to set up this project for production, but that is outside the scope of this document.
 
 ## Usage
 
@@ -72,6 +88,8 @@ You can also use [**Gunicorn**](https://gunicorn.org/) to set up this project fo
 1. Arrange the order of the files by clicking the **Up** and **Down** buttons and optionally rename them
 1. Select any options such as adding page numbers or table of contents and specify their criteria
 1. Click **Merge** and, if applicable, select a location to download the merged .pdf file
+
+For manual CloudConvert testing, open `/cloudconvert/test`, provide an API key if one is not already configured in the environment, upload a `.doc`, `.docx`, or `.odt` file, and the app will return the converted PDF.
 
 ## Contributing
 
