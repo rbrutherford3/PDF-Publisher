@@ -1,18 +1,83 @@
-from flask import Flask, redirect, render_template, request, send_file
+from flask import Flask, render_template, request, send_file
+from io import BytesIO
 import os
 import shutil
-import subprocess
+import tempfile
 import PyPDF2
 from fpdf import FPDF
+from cloudconvert_service import CloudConvertError, convert_office_to_pdf, resolve_api_key
 from recaptchav3 import reCAPTCHAv3
 import requests
 
 app = Flask(__name__)
+WORK_DIR = os.environ.get("PDFPUBLISHER_WORK_DIR") or os.path.join(tempfile.gettempdir(), "pdfpublisher")
+os.makedirs(WORK_DIR, exist_ok=True)
 
-# Redirect to pdfpublisher on root access
+
+def get_output_path(filename: str) -> str:
+    return os.path.join(WORK_DIR, filename)
+
+
+def get_uploads_dir() -> str:
+    uploads_dir = os.path.join(WORK_DIR, "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+    return uploads_dir
+
+# If the deployment needs to serve the app from the /pdfpublisher/ subdirectory,
+# restore the redirect below by uncommenting it and updating the route decorators
+# accordingly.
+# from flask import redirect
+# @app.route("/")
+# def root():
+#     return redirect("/pdfpublisher/")
+
+# Serve the upload page directly at the site root
 @app.route("/")
 def root():
-    return redirect("/pdfpublisher/")
+    return upload()
+
+
+@app.route("/health")
+def health():
+    return "ok", 200
+
+
+@app.route("/cloudconvert/test")
+def cloudconvert_test_page():
+    return render_template(
+        "cloudconvert_test.html",
+        api_key_value=resolve_api_key(),
+        error_message=None,
+    )
+
+
+@app.route("/cloudconvert/test", methods=["POST"])
+def cloudconvert_test_convert():
+    uploaded_file = request.files.get("file")
+    api_key = (request.form.get("api_key") or resolve_api_key() or "").strip()
+
+    if uploaded_file is None or not uploaded_file.filename:
+        return render_template(
+            "cloudconvert_test.html",
+            api_key_value=api_key,
+            error_message="Choose a .doc, .docx, or .odt file to convert.",
+        )
+
+    try:
+        pdf_bytes, output_filename = convert_office_to_pdf(uploaded_file, api_key)
+    except CloudConvertError as exc:
+        return render_template(
+            "cloudconvert_test.html",
+            api_key_value=api_key,
+            error_message=str(exc),
+        )
+
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=output_filename,
+    )
 
 # Page numbering class taken from https://stackoverflow.com/a/68382694/3130769
 class NumberPDF(FPDF):
@@ -45,12 +110,12 @@ class NumberPDF(FPDF):
 # Go to file upload initially
 @app.route("/pdfpublisher/")
 def upload():
-    return render_template("upload.html", reCAPTCHA_site_key=reCAPTCHAv3.site_key)
+    return render_template("upload.html", reCAPTCHA_site_key=reCAPTCHAv3.site_key, error_message=None)
 
 @app.route('/pdfpublisher/success', methods = ['POST'])
 def success():
-    uploads = "uploads"
-    result = "result.pdf"
+    uploads = get_uploads_dir()
+    result = get_output_path("result.pdf")
     parameters = request.form
     recaptcha_passed = False
     recaptcha_response = parameters.get('g-recaptcha-response')
@@ -66,7 +131,7 @@ def success():
             os.remove(result)
         # Create uploads folder if it doesn't exist:
         if not os.path.exists(uploads):
-            os.mkdir(uploads)
+            os.makedirs(uploads, exist_ok=True)
         else:
             # Get ride of old uploads, if they exist
             oldfiles = os.listdir(uploads)
@@ -79,16 +144,21 @@ def success():
             if not f.filename:
                 continue
             filename, extension = os.path.splitext(f.filename)
+            extension = extension.lower()
             justnames.append(filename)
-            f.save(os.path.join(uploads, f.filename))
-            if extension == ".doc" or extension == ".docx" or extension == ".odt":
-                env = os.environ.copy()
-                env["PATH"] = env.get("PATH", "") + ":/usr/bin"
-                subprocess.run(
-                    ["libreoffice", "--headless", "--convert-to", "pdf", os.path.join(uploads, f.filename), "--outdir", uploads],
-                    env=env
-                )
-                os.remove(os.path.join(uploads, f.filename))
+            if extension in {".doc", ".docx", ".odt"}:
+                api_key = resolve_api_key()
+                try:
+                    pdf_bytes, _ = convert_office_to_pdf(f, api_key=api_key, filename=f.filename)
+                    output_pdf_path = os.path.join(uploads, f"{filename}.pdf")
+                    with open(output_pdf_path, "wb") as output_pdf:
+                        output_pdf.write(pdf_bytes)
+                except CloudConvertError as exc:
+                    message = f"CloudConvert conversion failed for {f.filename}: {exc}"
+                    print(message)
+                    return render_template("upload.html", reCAPTCHA_site_key=reCAPTCHAv3.site_key, error_message=message)
+            else:
+                f.save(os.path.join(uploads, f.filename))
         # Send bare filenames to 'arrange.html' for ordering
         return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
     else:
@@ -98,18 +168,21 @@ def success():
 @app.route('/pdfpublisher/compile', methods = ['POST'])
 def compile():
     parameters = request.form
-    # Remove previous .pdf files
-    for filename in os.listdir(os.getcwd()):
+    work_dir = WORK_DIR
+    uploads = get_uploads_dir()
+
+    # Remove previous .pdf files from the app working directory
+    for filename in os.listdir(work_dir):
         if filename.lower().endswith("pdf"):
-            os.remove(filename)
-    
+            os.remove(os.path.join(work_dir, filename))
+
     # Define pdf filenames
-    unindexedfile = "unindexed.pdf"
-    indexedfile = "indexed.pdf"
-    indexedfilewithtoc = "indexed_toc.pdf"
-    tocfile = "contents.pdf"
-    final = "final.pdf"
-    finaloutlined = "final_out.pdf"
+    unindexedfile = get_output_path("unindexed.pdf")
+    indexedfile = get_output_path("indexed.pdf")
+    indexedfilewithtoc = get_output_path("indexed_toc.pdf")
+    tocfile = get_output_path("contents.pdf")
+    final = get_output_path("final.pdf")
+    finaloutlined = get_output_path("final_out.pdf")
 
     # Gather filenames in user-specified order and user-specified titles
     filenames = request.form.get("finalorder")
@@ -159,7 +232,7 @@ def compile():
             if filelist[i] == "### TABLE OF CONTENTS ###":
                 tocpassed = True
             else:
-                pdf = PyPDF2.PdfReader("uploads/" + filelist[i])
+                pdf = PyPDF2.PdfReader(os.path.join(uploads, filelist[i]))
                 if beginnumbering:
                     if tocpassed:
                         y += toclistitemspacing
@@ -192,7 +265,7 @@ def compile():
                 if beginnumbering:
                     tocpagenumber += tocnumpages
             else:
-                pdf = PyPDF2.PdfReader("uploads/" + filelist[i])
+                pdf = PyPDF2.PdfReader(os.path.join(uploads, filelist[i]))
                 if beginnumbering:
                     if tocpassed:
                         contents.set_xy(tochorizontalmargin, y)
@@ -218,7 +291,7 @@ def compile():
             pdffile = tocfile
             toclist += "\"Table of Contents\" " + str(pagenumber) + "\n"
         else:
-            pdffile = "uploads/" + filelist[i]
+            pdffile = os.path.join(uploads, filelist[i])
             toclist += "\"" + titlelist[i] + "\" " + str(pagenumber) + "\n"
         if beginnumbering:
             indexedresult.append(pdffile)
@@ -229,7 +302,7 @@ def compile():
         pagenumber += len(pdf.pages)
 
     # Save the table of contents pdf bookmark list for later
-    f = open("toc", "w")
+    f = open(get_output_path("toc"), "w")
     f.write(toclist)
     f.close()
 
@@ -241,13 +314,13 @@ def compile():
     indexedresult.close()
 
     # Delete the individual pdfs
-    uploads = os.listdir("uploads")
-    for f in uploads:
-        os.remove(os.path.join("uploads", f))
+    upload_files = os.listdir(uploads)
+    for f in upload_files:
+        os.remove(os.path.join(uploads, f))
     
     if pagenumbers:
         # Page numbering code taken from https://stackoverflow.com/a/68382694/3130769
-        original = "originalresult.pdf"
+        original = get_output_path("originalresult.pdf")
         os.rename(indexedfile, original)
         # Grab the file you want to add pages to
         inputFile = PyPDF2.PdfReader(original)
@@ -263,10 +336,10 @@ def compile():
             tempNumFile.add_page()
 
         # Save the temporary numbering PDF
-        tempNumFile.output("tempNumbering.pdf")
+        tempNumFile.output(get_output_path("tempNumbering.pdf"))
 
         # Create a new PDFFileReader for the temporary numbering PDF
-        mergeFile = PyPDF2.PdfReader("tempNumbering.pdf")
+        mergeFile = PyPDF2.PdfReader(get_output_path("tempNumbering.pdf"))
 
         # Create a new PDFFileWriter for the final output document
         mergeWriter = PyPDF2.PdfWriter()
@@ -282,7 +355,7 @@ def compile():
 
         # Delete the temporary file and the input file
         os.remove(original)
-        os.remove("tempNumbering.pdf")
+        os.remove(get_output_path("tempNumbering.pdf"))
 
         # Write the merged output
         with open(indexedfile, 'wb') as fh:
@@ -301,20 +374,22 @@ def compile():
         os.remove(indexedfile)
 
     # Create a pdf file with the table of contents bookmarks
+    toc_path = get_output_path("toc")
     if shutil.which("pdftocio"):
-        os.system("export PATH=$PATH:/usr/local/bin; pdftocio " + final + " < toc")
-        os.remove("toc")
+        os.system(f"export PATH=$PATH:/usr/local/bin; pdftocio {final} < {toc_path}")
+        os.remove(toc_path)
         os.remove(final)
         os.rename(finaloutlined, final)
     else:
         # pdftocio not available, skip bookmark creation but keep the PDF
-        if os.path.exists("toc"):
-            os.remove("toc")
+        if os.path.exists(toc_path):
+            os.remove(toc_path)
         if os.path.exists(finaloutlined):
             os.remove(finaloutlined)
 
     # Download the final result
     return send_file(final, as_attachment=True)
 
+
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))

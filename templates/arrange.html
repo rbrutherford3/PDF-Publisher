@@ -6,7 +6,7 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-	<form action="compile" method="post" onsubmit="return checkPageNumberStart();">
+	<form action="{{ url_for('compile') }}" method="post" onsubmit="return checkPageNumberStart();">
 		<h1>Merge files and convert to .pdf</h1>
 		<h2>Specify options</h2>
 		<div class="option">

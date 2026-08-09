@@ -1,7 +1,5 @@
 __pycache__/
-uploads/
-pdfoutline.py
-*.pdf
 .vscode/
-recaptchav3.py
+environment_vars
 .venv/
+.env

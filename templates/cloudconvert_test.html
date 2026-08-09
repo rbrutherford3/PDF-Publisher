@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CloudConvert Test</title>
+</head>
+<body>
+    <form action="{{ url_for('cloudconvert_test_convert') }}" method="post" enctype="multipart/form-data">
+        <h1>CloudConvert Test Page</h1>
+        <p>Upload a Word or OpenDocument file and this page will convert it to PDF using the local CloudConvert helper.</p>
+        {% if error_message %}
+        <p style="color: #b91c1c; font-weight: bold;">{{ error_message }}</p>
+        {% endif %}
+        <p>
+            <label for="api_key">CloudConvert API key</label><br>
+            <input id="api_key" name="api_key" type="password" value="{{ api_key_value }}" style="width: 32rem; max-width: 100%;">
+        </p>
+        <p>
+            <label for="file">Document file</label><br>
+            <input id="file" type="file" name="file" accept=".doc,.docx,.odt">
+        </p>
+        <p>
+            <input type="submit" value="Convert to PDF">
+        </p>
+    </form>
+</body>
+</html>
