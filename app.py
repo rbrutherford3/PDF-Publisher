@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, send_from_directory
 from io import BytesIO
 import os
 import shutil
@@ -40,6 +40,24 @@ def root():
 @app.route("/health")
 def health():
     return "ok", 200
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(app.static_folder, "favicon"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
+
+
+@app.route("/site.webmanifest")
+def webmanifest():
+    return send_from_directory(
+        os.path.join(app.static_folder, "favicon"),
+        "site.webmanifest",
+        mimetype="application/manifest+json",
+    )
 
 
 @app.route("/cloudconvert/test")
