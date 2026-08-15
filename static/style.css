@@ -21,3 +21,14 @@ input[type=number] {
     background-color: black;
     color: white;
 }
+
+.upload-button {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid #767676;
+    border-radius: 2px;
+    background: #efefef;
+    color: #000;
+    cursor: pointer;
+    font: inherit;
+}

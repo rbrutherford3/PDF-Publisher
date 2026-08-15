@@ -16,6 +16,36 @@
             });
         });
     </script>
+    <style>
+        #file-list {
+            padding-left: 0;
+            list-style: none;
+        }
+
+        #file-list li {
+            margin: 0.5rem 0;
+        }
+
+        #file-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .choose-files-button,
+        .upload-button {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border: 1px solid #767676;
+            border-radius: 2px;
+            background: #efefef;
+            color: #000;
+            cursor: pointer;
+            font: inherit;
+        }
+    </style>
 </head>
 <body>
     <form action="{{ url_for('success') }}" method="post" enctype="multipart/form-data">
@@ -24,11 +54,57 @@
         <p style="color: #b91c1c; font-weight: bold;">{{ error_message }}</p>
         {% endif %}
         <h3>Select .doc, .docx, .odt, and .pdf files to upload:</h1>
-        <input type="file" name="file" accept=".doc, .docx, .odt, .pdf" multiple />
+        <input type="file" id="file-input" name="file" accept=".doc, .docx, .odt, .pdf" multiple />
+        <label for="file-input" class="choose-files-button">Choose Files</label>
+        <ul id="file-list"></ul>
         <h3>Submit selected files:</h1>
         <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response">
         <input type="hidden" name="action" value="validate_captcha">
-        <input type="submit" value="Upload">
+        <input type="submit" class="upload-button" value="Upload">
     </form>  
+    <script>
+        const fileInput = document.getElementById("file-input");
+        const fileList = document.getElementById("file-list");
+        const selectedFiles = [];
+
+        fileInput.addEventListener("click", function () {
+            // Reset the native picker selection so each change can be appended.
+            fileInput.value = "";
+        });
+
+        fileInput.addEventListener("change", function () {
+            selectedFiles.push(...Array.from(fileInput.files));
+            renderFileList();
+        });
+
+        function renderFileList() {
+            fileList.replaceChildren();
+
+            selectedFiles.forEach(function (file, index) {
+                const item = document.createElement("li");
+                item.appendChild(document.createTextNode(file.name + " "));
+
+                const removeButton = document.createElement("button");
+                removeButton.type = "button";
+                removeButton.textContent = "Delete";
+                removeButton.addEventListener("click", function () {
+                    selectedFiles.splice(index, 1);
+                    renderFileList();
+                });
+
+                item.appendChild(removeButton);
+                fileList.appendChild(item);
+            });
+        }
+
+        fileInput.form.addEventListener("submit", function () {
+            const transfer = new DataTransfer();
+
+            selectedFiles.forEach(function (file) {
+                transfer.items.add(file);
+            });
+            fileInput.files = transfer.files;
+        });
+    </script>
 </body>  
 </html>  
