@@ -21,11 +21,9 @@ This app was inspired by my father, who was occasionally asking me to take stori
 
 ## Install
 
-1. Install Python 3 and pip if they are not already available:
-
+#### 1. Install Python 3 and pip if they are not already available
 
 On Ubuntu or Debian:
-
 
 ```
 sudo apt-get install -y python3 python3-pip python3-venv
@@ -33,35 +31,35 @@ sudo apt-get install -y python3 python3-pip python3-venv
 
 Use the equivalent package manager or installer for your operating system if you are not on Ubuntu or Debian.
 
-2. Clone the project and change into the repository directory:
+#### 2. Clone the project and change into the repository directory
 
 ```
 git clone https://github.com/rbrutherford3/PDF-Publisher.git
 cd PDF-Publisher
 ```
 
-3. Create and activate a virtual environment:
+#### 3. Create and activate a virtual environment
 
 ```
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-4. Install Python dependencies from the project requirements file:
+#### 4. Install Python dependencies from the project requirements file
 
 ```
 pip3 install -r requirements.txt
 ```
 
-5. Create Google reCAPTCHAv3 site key and secret keys, making sure your reCAPTCHA configuration allows `localhost` and `127.0.0.1`.
+#### 5. Create Google reCAPTCHAv3 site key and secret keys, making sure your reCAPTCHA configuration allows `localhost` and `127.0.0.1`
 
-6. Create CloudConvert Sandbox and Live API keys that have the following permissions:
+#### 6. Create CloudConvert Sandbox and Live API keys that have the following permissions:
 
 - `user.read`
 - `task.read`
 - `task.write`
 
-7. Set the reCAPTCHAv3 and CloudConvert environment variables required by the app before running it:
+#### 7. Set the reCAPTCHAv3 and CloudConvert environment variables required by the app before running it
 
 ```
 export RECAPTCHA_SITE_KEY="your-site-key"
@@ -80,19 +78,19 @@ export CLOUDCONVERT_SANDBOX=true
 
 If you are deploying to Vercel, set the same values in your Vercel project environment variables so the app can access them at runtime.
 
-8. Optional: enable Flask debug mode before running:
+#### 8. Optional: enable Flask debug mode before running
 
 ```
 export FLASK_DEBUG=1
 ```
 
-9. Run the program:
+#### 9. Run the program
 
 ```
 python3 -m flask run
 ```
 
-(you can also add `--debug` at the end of this command instead of setting `FLASK_DEBUG=1` in step 6)
+(you can also add `--debug` at the end of this command instead of setting `FLASK_DEBUG=1` in step 8)
 
 You should see something like the following:
 
@@ -104,7 +102,7 @@ You should see something like the following:
 
 This means you can now go to `localhost:5000` or `127.0.0.1:5000` in your browser to use the program.
 
-10. Optional: when you are done using the app, deactivate the virtual environment:
+#### 10. Optional: when you are done using the app, deactivate the virtual environment
 ```
 deactivate
 ```
@@ -122,7 +120,7 @@ You can also use [Gunicorn](https://gunicorn.org/) to set up this project for pr
 1. Select multiple .doc, .docx, .odt, and .pdf files to upload
 1. Click **Upload** and wait for the system to convert the files to .pdf
 1. Select any options such as adding page numbers or table of contents and specify their criteria
-1. Arrange the order of the files by clicking the **Up** and **Down** buttons and optionally rename them
+1. Arrange the order of the files by clicking the **Up** and **Down** buttons (or by dragging and dropping the items) and optionally rename them
 1. Click **Merge** and, if applicable, select a location to download the merged .pdf file
 
 **For Development only**:
