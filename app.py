@@ -6,8 +6,7 @@ import tempfile
 import PyPDF2
 from fpdf import FPDF
 from cloudconvert_service import CloudConvertError, convert_office_to_pdf, resolve_api_key
-from recaptchav3 import reCAPTCHAv3
-import requests
+from turnstile import SITE_KEY
 
 app = Flask(__name__)
 WORK_DIR = os.environ.get("PDFPUBLISHER_WORK_DIR") or os.path.join(tempfile.gettempdir(), "pdfpublisher")
@@ -128,59 +127,47 @@ class NumberPDF(FPDF):
 # Go to file upload initially
 @app.route("/pdfpublisher/")
 def upload():
-    return render_template("upload.html", reCAPTCHA_site_key=reCAPTCHAv3.site_key, error_message=None)
+    return render_template("upload.html", turnstile_site_key=SITE_KEY, error_message=None)
 
 @app.route('/pdfpublisher/success', methods = ['POST'])
 def success():
     uploads = get_uploads_dir()
     result = get_output_path("result.pdf")
-    parameters = request.form
-    recaptcha_passed = False
-    recaptcha_response = parameters.get('g-recaptcha-response')
-    try:
-        recaptcha_secret = reCAPTCHAv3.secret_key
-        response = requests.post(f'https://www.google.com/recaptcha/api/siteverify?secret={recaptcha_secret}&response={recaptcha_response}').json()
-        recaptcha_passed = response.get('success')
-    except Exception as e:
-        print(f"failed to get reCaptcha: {e}")
-    if recaptcha_passed:
-        # Get rid of old result, if it exist
-        if os.path.exists(result):
-            os.remove(result)
-        # Create uploads folder if it doesn't exist:
-        if not os.path.exists(uploads):
-            os.makedirs(uploads, exist_ok=True)
-        else:
-            # Get ride of old uploads, if they exist
-            oldfiles = os.listdir(uploads)
-            for f in oldfiles:
-                os.remove(os.path.join(uploads, f))
-        # Save each .docx, convert to .pdf, delete .docx
-        filelist = request.files.getlist("file")
-        justnames = []
-        for f in filelist:
-            if not f.filename:
-                continue
-            filename, extension = os.path.splitext(f.filename)
-            extension = extension.lower()
-            justnames.append(filename)
-            if extension in {".doc", ".docx", ".odt"}:
-                api_key = resolve_api_key()
-                try:
-                    pdf_bytes, _ = convert_office_to_pdf(f, api_key=api_key, filename=f.filename)
-                    output_pdf_path = os.path.join(uploads, f"{filename}.pdf")
-                    with open(output_pdf_path, "wb") as output_pdf:
-                        output_pdf.write(pdf_bytes)
-                except CloudConvertError as exc:
-                    message = f"CloudConvert conversion failed for {f.filename}: {exc}"
-                    print(message)
-                    return render_template("upload.html", reCAPTCHA_site_key=reCAPTCHAv3.site_key, error_message=message)
-            else:
-                f.save(os.path.join(uploads, f.filename))
-        # Send bare filenames to 'arrange.html' for ordering
-        return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
+    # Get rid of old result, if it exist
+    if os.path.exists(result):
+        os.remove(result)
+    # Create uploads folder if it doesn't exist:
+    if not os.path.exists(uploads):
+        os.makedirs(uploads, exist_ok=True)
     else:
-        return "Homosapiens only, please!"
+        # Get ride of old uploads, if they exist
+        oldfiles = os.listdir(uploads)
+        for f in oldfiles:
+            os.remove(os.path.join(uploads, f))
+    # Save each .docx, convert to .pdf, delete .docx
+    filelist = request.files.getlist("file")
+    justnames = []
+    for f in filelist:
+        if not f.filename:
+            continue
+        filename, extension = os.path.splitext(f.filename)
+        extension = extension.lower()
+        justnames.append(filename)
+        if extension in {".doc", ".docx", ".odt"}:
+            api_key = resolve_api_key()
+            try:
+                pdf_bytes, _ = convert_office_to_pdf(f, api_key=api_key, filename=f.filename)
+                output_pdf_path = os.path.join(uploads, f"{filename}.pdf")
+                with open(output_pdf_path, "wb") as output_pdf:
+                    output_pdf.write(pdf_bytes)
+            except CloudConvertError as exc:
+                message = f"CloudConvert conversion failed for {f.filename}: {exc}"
+                print(message)
+                return render_template("upload.html", turnstile_site_key=SITE_KEY, error_message=message)
+        else:
+            f.save(os.path.join(uploads, f.filename))
+    # Send bare filenames to 'arrange.html' for ordering
+    return render_template("arrange.html", pdfs = justnames, pdfslen = len(justnames))
 
 # Gather .pdf documents, create page numbers and table of contents, and merge
 @app.route('/pdfpublisher/compile', methods = ['POST'])

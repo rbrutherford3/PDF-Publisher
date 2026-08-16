@@ -51,7 +51,7 @@ source .venv/bin/activate
 pip3 install -r requirements.txt
 ```
 
-#### 5. Create Google reCAPTCHAv3 site key and secret keys, making sure your reCAPTCHA configuration allows `localhost` and `127.0.0.1`
+#### 5. Configure the Cloudflare Turnstile widget, making sure its domains include `localhost` and `127.0.0.1`
 
 #### 6. Create CloudConvert Sandbox and Live API keys that have the following permissions:
 
@@ -59,16 +59,19 @@ pip3 install -r requirements.txt
 - `task.read`
 - `task.write`
 
-#### 7. Set the reCAPTCHAv3 and CloudConvert environment variables required by the app before running it
+#### 7. Set the Turnstile and CloudConvert environment variables required by the app before running it
 
 ```
-export RECAPTCHA_SITE_KEY="your-site-key"
-export RECAPTCHA_SECRET_KEY="your-secret-key"
+TURNSTILE_SITE_KEY = "your-turnstile-site-key"
+TURNSTILE_SECRET = "your-turnstile-secret"
+export TURNSTILE_HOSTNAMES="localhost,127.0.0.1"
 export CLOUDCONVERT_LIVE_API_KEY="your-live-cloudconvert-api-key"
 export CLOUDCONVERT_SANDBOX_API_KEY="your-sandbox-cloudconvert-api-key"
 ```
 
 Note that these variables are required whether you are running locally or in production.
+
+If you deploy on Vercel, add `TURNSTILE_SECRET`, `TURNSTILE_SITE_KEY`, and `TURNSTILE_HOSTNAMES` to the project environment. Set `TURNSTILE_HOSTNAMES` to the production frontend hostnames only, for example `pdf-publisher.vercel.app`; do not include local development hosts in production.
 
 Optional: opt back into the sandbox environment if needed (for development purposes):
 

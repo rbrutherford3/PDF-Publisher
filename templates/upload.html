@@ -7,15 +7,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}">
     <link rel="manifest" href="{{ url_for('webmanifest') }}">
-    <script src="https://www.google.com/recaptcha/api.js?render={{ reCAPTCHA_site_key }}"></script>
-    <script>
-        grecaptcha.ready(function () {
-            grecaptcha.execute('{{ reCAPTCHA_site_key }}', {action: 'validate_captcha'}).then(function (token) {
-                console.info("got token: " + token);
-                document.getElementById('g-recaptcha-response').value = token;
-            });
-        });
-    </script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         #file-list {
             padding-left: 0;
@@ -45,6 +37,10 @@
             cursor: pointer;
             font: inherit;
         }
+
+        .upload-button[hidden] {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -58,14 +54,33 @@
         <label for="file-input" class="choose-files-button">Choose Files</label>
         <ul id="file-list"></ul>
         <h3>Submit selected files:</h1>
-        <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response">
-        <input type="hidden" name="action" value="validate_captcha">
-        <input type="submit" class="upload-button" value="Upload">
+        <div
+            class="cf-turnstile"
+            data-sitekey="{{ turnstile_site_key }}"
+            data-action="upload"
+            data-callback="onTurnstileSuccess"
+            data-error-callback="onTurnstileUnavailable"
+            data-expired-callback="onTurnstileUnavailable"
+        ></div>
+        <input type="submit" class="upload-button" value="Upload" hidden>
     </form>  
     <script>
         const fileInput = document.getElementById("file-input");
         const fileList = document.getElementById("file-list");
+        const form = fileInput.form;
+        const uploadButton = form.querySelector(".upload-button");
         const selectedFiles = [];
+        let turnstileComplete = false;
+
+        function onTurnstileSuccess() {
+            turnstileComplete = true;
+            uploadButton.hidden = false;
+        }
+
+        function onTurnstileUnavailable() {
+            turnstileComplete = false;
+            uploadButton.hidden = true;
+        }
 
         fileInput.addEventListener("click", function () {
             // Reset the native picker selection so each change can be appended.
@@ -97,7 +112,12 @@
             });
         }
 
-        fileInput.form.addEventListener("submit", function () {
+        form.addEventListener("submit", function (event) {
+            if (!turnstileComplete) {
+                event.preventDefault();
+                return;
+            }
+
             const transfer = new DataTransfer();
 
             selectedFiles.forEach(function (file) {
