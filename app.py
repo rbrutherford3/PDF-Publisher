@@ -31,7 +31,7 @@ def get_uploads_dir() -> str:
 #     return redirect("/pdfpublisher/")
 
 # Serve the upload page directly at the site root
-@app.route("/")
+@app.route("/", methods=["GET"])
 def root():
     return upload()
 
@@ -125,11 +125,13 @@ class NumberPDF(FPDF):
         
 
 # Go to file upload initially
-@app.route("/pdfpublisher/")
+# The former /pdfpublisher/ subpath is intentionally disabled; the root route
+# above continues to serve the upload page.
+# @app.route("/pdfpublisher/")
 def upload():
     return render_template("upload.html", turnstile_site_key=SITE_KEY, error_message=None)
 
-@app.route('/pdfpublisher/success', methods = ['POST'])
+@app.route('/', methods=['POST'])
 def success():
     uploads = get_uploads_dir()
     result = get_output_path("result.pdf")
