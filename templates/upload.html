@@ -2,68 +2,40 @@
 <html>
 <head>  
     <title>Upload Files</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ url_for('favicon') }}" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}">
     <link rel="manifest" href="{{ url_for('webmanifest') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-    <style>
-        #file-list {
-            padding-left: 0;
-            list-style: none;
-        }
-
-        #file-list li {
-            margin: 0.5rem 0;
-        }
-
-        #file-input {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-            overflow: hidden;
-        }
-
-        .choose-files-button,
-        .upload-button {
-            display: inline-block;
-            padding: 0.35rem 0.75rem;
-            border: 1px solid #767676;
-            border-radius: 2px;
-            background: #efefef;
-            color: #000;
-            cursor: pointer;
-            font: inherit;
-        }
-
-        .upload-button[hidden] {
-            display: none;
-        }
-    </style>
 </head>
 <body>
-    <form action="{{ url_for('success') }}" method="post" enctype="multipart/form-data">
-        <h1>Publish multiple file types into one PDF file</h1>
-        {% if error_message %}
-        <p style="color: #b91c1c; font-weight: bold;">{{ error_message }}</p>
-        {% endif %}
-        <h3>Select .doc, .docx, .odt, and .pdf files to upload:</h1>
-        <input type="file" id="file-input" name="file" accept=".doc, .docx, .odt, .pdf" multiple />
-        <label for="file-input" class="choose-files-button">Choose Files</label>
-        <ul id="file-list"></ul>
-        <h3>Submit selected files:</h1>
-        <div
-            class="cf-turnstile"
-            data-sitekey="{{ turnstile_site_key }}"
-            data-action="upload"
-            data-callback="onTurnstileSuccess"
-            data-error-callback="onTurnstileUnavailable"
-            data-expired-callback="onTurnstileUnavailable"
-        ></div>
-        <input type="submit" class="upload-button" value="Upload" hidden>
-    </form>  
+    <div class="container">
+        <form action="{{ url_for('success') }}" method="post" enctype="multipart/form-data">
+            <h1>Publish multiple file types into one PDF file</h1>
+            {% if error_message %}
+            <p class="error-message">{{ error_message }}</p>
+            {% endif %}
+            <h3>Select .doc, .docx, .odt, and .pdf files to upload:</h3>
+            <input type="file" id="file-input" name="file" accept=".doc, .docx, .odt, .pdf" multiple />
+            <label for="file-input" class="choose-files-button">Choose Files</label>
+            <ul id="file-list"></ul>
+            <h3>Submit selected files:</h3>
+            <div
+                class="cf-turnstile"
+                data-sitekey="{{ turnstile_site_key }}"
+                data-action="upload"
+                data-callback="onTurnstileSuccess"
+                data-error-callback="onTurnstileUnavailable"
+                data-expired-callback="onTurnstileUnavailable"
+            ></div>
+            <div style="margin-top: 1.5rem;">
+                <input type="submit" class="upload-button" value="Upload" hidden>
+            </div>
+        </form>
+    </div>
     <script>
         const fileInput = document.getElementById("file-input");
         const fileList = document.getElementById("file-list");
@@ -102,6 +74,7 @@
                 const removeButton = document.createElement("button");
                 removeButton.type = "button";
                 removeButton.textContent = "Delete";
+                removeButton.className = "delete-btn";
                 removeButton.addEventListener("click", function () {
                     selectedFiles.splice(index, 1);
                     renderFileList();
